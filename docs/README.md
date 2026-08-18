@@ -80,7 +80,7 @@ python waypoints.py --host 127.0.0.1 --port 2000 --name TOWN10HD_Opt --scenario 
 - **效果**：出现蓝色圆圈标注 **"EGO"**
 - Ego 车辆自动吸附到最近车道，z 轴比地面高 0.3m
 
-![Trigger + Ego + Agent 1 位置示意](docs/scenarios/01_trigger_ego.png)
+![Trigger + Ego ](1.png)
 
 #### Step 2：设置 Trigger 触发点（必选）
 
@@ -99,7 +99,7 @@ python waypoints.py --host 127.0.0.1 --port 2000 --name TOWN10HD_Opt --scenario 
 - **操作**：鼠标右键点击地图
 - **效果**：添加默认类型的智能体（蓝色圆圈）
 
-![Agent 智能体类型一览](docs/scenarios/02_agents.png)
+![Agent 智能体类型一览](2.png)
 
 | 按键 | 功能 |
 |---|---|
@@ -270,214 +270,53 @@ videos/
 
 | 场景编码 | 测试场景（Excel） | 场景类名 | 示意图 |
 |---------|-----------------|---------|--------|
-| **1.a** | 限速标志 | - | ![1a](docs/scenarios/02a_speedlimit.png) |
-| **1.b** | 弯道 | - | ![1b](docs/scenarios/01b_curve.png) |
+| **1.a** | 限速标志 | - | ![1a](3.png) |
+| **1.b** | 弯道 | - | ![1b](4.png) |
 
 ### 2. 道路交通基础设施与障碍物识别及响应
 
 | 场景编码 | 测试场景（Excel） | 场景类名 | 示意图 |
 |---------|-----------------|---------|--------|
-| **2.b** | 环形路口 | `EgoRouteFollowScene` | ![2b](docs/scenarios/2b_roundabout.png) |
-| **2.c** | 无信号灯路口左侧存在直行车辆 | `CarCrossScene` | ![2c](docs/scenarios/2c_intersection_left.png) |
-| **2.d** | 无信号灯路口右侧存在直行车辆 | `CarCrossScene` | ![2d](docs/scenarios/2d_intersection_right.png) |
-| **2.e** | 无信号灯路口对向存在直行车辆 | `CarCrossScene` | ![2e](docs/scenarios/2e_intersection_oncoming.png) |
-| **2.f** | 施工车道 | `StaticObstacleScene` | ![2f](docs/scenarios/2f_construction.png) |
-| **2.g** | 静止车辆占用部分车道 | `StaticCarCrossScene` | ![2g](docs/scenarios/2g_parked_vehicle.png) |
+| **2.b** | 环形路口 | `EgoRouteFollowScene` | ![2b](5.png) |
+| **2.c** | 无信号灯路口左侧存在直行车辆 | `CarCrossScene` | ![2c](6.png) |
+| **2.d** | 无信号灯路口右侧存在直行车辆 | `CarCrossScene` | ![2d](7.png) |
+| **2.e** | 无信号灯路口对向存在直行车辆 | `CarCrossScene` | ![2e](8.png) |
+| **2.f** | 施工车道 | `StaticObstacleScene` | ![2f](9.png) |
+| **2.g** | 静止车辆占用部分车道 | `StaticCarCrossScene` | ![2g](10.png) |
 
 ### 3. 周边车辆行驶状态识别及响应
 
 | 场景编码 | 测试场景（Excel） | 场景类名 | 示意图 |
 |---------|-----------------|---------|--------|
-| **3.a** | 行人通过人行横道线(1) | `PedestrianCrossScene` | ![3a](docs/scenarios/3a_crosswalk.png) |
-| **3.b I** | 行人沿道路行走Ⅰ（1） | `PedestrianCrossScene` | ![3b1](docs/scenarios/3b1_walk_parallel1.png) |
-| **3.b II** | 行人沿道路行走Ⅱ（1） | `PedestrianCrossScene` | ![3b2](docs/scenarios/3b2_walk_parallel2.png) |
-| **3.c** | 自行车同车道骑行（1） | `BicycleCrossScene` | ![3c](docs/scenarios/3c_bike_same_lane.png) |
-| **3.d** | 行人目标感知受阻（1） | `OccludedPedestrianScene` | ![3d](docs/scenarios/3d_occluded.png) |
-| **4.a** | 前方车辆切入 | `CarCutInScene` | ![4a](docs/scenarios/4a_cut_in.png) |
-| **4.b** | 前方车辆切出 | `CarCutOutScene` | ![4b](docs/scenarios/4b_cut_out.png) |
-| **4.c** | 对向车辆借道行驶(1) | `CarOncomingPassScene` | ![4c](docs/scenarios/4c_overtake.png) |
-| **4.d** | 目标车辆停-走 | `CarStopandGoScene` | ![4d](docs/scenarios/4d_stop_go.png) |
+| **3.a** | 行人通过人行横道线(1) | `PedestrianCrossScene` | ![3a](11.png) |
+| **3.b I** | 行人沿道路行走Ⅰ（1） | `PedestrianCrossScene` | ![3b1](12.png) |
+| **3.b II** | 行人沿道路行走Ⅱ（1） | `PedestrianCrossScene` | ![3b2](13.png) |
+| **3.c** | 自行车同车道骑行（1） | `BicycleCrossScene` | ![3c](14.png) |
+| **3.d** | 行人目标感知受阻（1） | `OccludedPedestrianScene` | ![3d](15.png) |
+| **4.a** | 前方车辆切入 | `CarCutInScene` | ![4a](16.png) |
+| **4.b** | 前方车辆切出 | `CarCutOutScene` | ![4b](17.png) |
+| **4.c** | 对向车辆借道行驶(1) | `CarOncomingPassScene` | ![4c](18.png) |
+| **4.d** | 目标车辆停-走 | `CarStopandGoScene` | ![4d](19.png) |
 
 ### 5. 自动紧急避险
 
 | 场景编码 | 测试场景（Excel） | 场景类名 | 示意图 |
 |---------|-----------------|---------|--------|
-| **5.a** | 行人横穿道路 | `PedestrianCrossScene` | ![5a](docs/scenarios/5a_pedestrian_emergency.png) |
-| **5.b** | 自行车横穿道路 | `BicycleCrossScene` | ![5b](docs/scenarios/5b_bike_emergency.png) |
-| **5.c** | 目标车辆切出后存在静止车辆 | `CarCutOutandStaticScene` | ![5c](docs/scenarios/5c_cutout_then_static.png) |
-| **5.d** | 前方车辆紧急制动 | `CarGoandStopScene` | ![5d](docs/scenarios/5d_emergency_brake.png) |
-| **5.e** | 紧急转弯危险情况 | `CarCrossScene` | ![5e](docs/scenarios/5e_emergency_swerve.png) |
-| **5.f** | 静止行人目标误触发 | `StaticPedestrianCrossScene` | ![5f](docs/scenarios/5f_static_ped_false.png) |
-| **5.g** | 移动行人目标误触发 | `PedestrianCrossScene` | ![5g](docs/scenarios/5g_moving_ped_false.png) |
+| **5.a** | 行人横穿道路 | `PedestrianCrossScene` | ![5a](20.png) |
+| **5.b** | 自行车横穿道路 | `BicycleCrossScene` | ![5b](21.png) |
+| **5.c** | 目标车辆切出后存在静止车辆 | `CarCutOutandStaticScene` | ![5c](22.png) |
+| **5.d** | 前方车辆紧急制动 | `CarGoandStopScene` | ![5d](23.png) |
+| **5.e** | 紧急转弯危险情况 | `CarCrossScene` | ![5e](24.png) |
+| **5.f** | 静止行人目标误触发 | `StaticPedestrianCrossScene` | ![5f](25.png) |
+| **5.g** | 移动行人目标误触发 | `PedestrianCrossScene` | ![5g](26.png) |
 
 ### 6. 停车
 
 | 场景编码 | 测试场景（Excel） | 场景类名 | 示意图 |
 |---------|-----------------|---------|--------|
-| **6.a** | 停车点 | `EgoRouteFollowScene` | ![6a](docs/scenarios/6a_parking_spot.png) |
-| **6.b** | 港湾式站台 | `EgoRouteFollowScene` | ![6b](docs/scenarios/6b_bus_bay.png) |
-| **6.c** | 普通站台 | `EgoRouteFollowScene` | ![6c](docs/scenarios/6c_regular_bus_stop.png) |
-
-### 场景详细说明
-
-#### 1.a — 限速标志
-
-道路旁设置限速标志，Ego 车辆需要识别并响应。
-
-![限速标志](docs/scenarios/02a_speedlimit.png)
-
-#### 1.b — 弯道
-
-Ego 车辆在弯道上行驶，需要正确跟踪车道曲线。
-
-![弯道](docs/scenarios/01b_curve.png)
-
-#### 2.b — 环形路口
-
-Ego 车辆进入环形路口，需处理多方向汇入车辆。
-
-![环形路口](docs/scenarios/2b_roundabout.png)
-
-#### 2.c — 无信号灯路口左侧存在直行车辆
-
-十字路口，左侧道路有车辆直行通过路口。
-
-![路口左侧直行](docs/scenarios/2c_intersection_left.png)
-
-#### 2.d — 无信号灯路口右侧存在直行车辆
-
-十字路口，右侧道路有车辆直行通过路口。
-
-![路口右侧直行](docs/scenarios/2d_intersection_right.png)
-
-#### 2.e — 无信号灯路口对向存在直行车辆
-
-十字路口，对向车道有车辆直行通过路口。
-
-![路口对向直行](docs/scenarios/2e_intersection_oncoming.png)
-
-#### 2.f — 施工车道
-
-道路前方出现施工锥桶封锁部分车道，Ego 需绕行。
-
-![施工车道](docs/scenarios/2f_construction.png)
-
-#### 2.g — 静止车辆占用部分车道
-
-一辆车停在路边，部分占据行车道。
-
-![静止车辆占车道](docs/scenarios/2g_parked_vehicle.png)
-
-#### 3.a — 行人通过人行横道线
-
-Ego 车辆行驶至人行横道，行人（Agent 1/2）正在横穿马路。
-
-![行人通过人行横道线](docs/scenarios/3a_crosswalk.png)
-
-#### 3.b I — 行人沿道路行走Ⅰ
-
-行人与 Ego 同向沿道路行走，测试纵向相对运动识别。
-
-![行人沿道路行走 I](docs/scenarios/3b1_walk_parallel1.png)
-
-#### 3.b II — 行人沿道路行走Ⅱ
-
-行人在平行道路上反向行走，测试不同相对速度下的识别。
-
-![行人沿道路行走 II](docs/scenarios/3b2_walk_parallel2.png)
-
-#### 3.c — 自行车同车道骑行
-
-自行车与 Ego 在同一条车道上同向行驶。
-
-![自行车同车道骑行](docs/scenarios/3c_bike_same_lane.png)
-
-#### 3.d — 行人目标感知受阻
-
-行人在容器（障碍物）后方被遮挡，突然走出测试感知系统的遮挡处理能力。
-
-![行人目标感知受阻](docs/scenarios/3d_occluded.png)
-
-#### 4.a — 前方车辆切入
-
-前方车辆从相邻车道变道切入 Ego 前方，Ego 需减速避让。
-
-![前方车辆切入](docs/scenarios/4a_cut_in.png)
-
-#### 4.b — 前方车辆切出
-
-Ego 前方车辆突然向侧方变道离开，可能暴露前方障碍物。
-
-![前方车辆切出](docs/scenarios/4b_cut_out.png)
-
-#### 4.c — 对向车辆借道行驶
-
-对向来车借用 Ego 所在车道超车，Ego 需减速让行。
-
-![对向车辆借道行驶](docs/scenarios/4c_overtake.png)
-
-#### 4.d — 目标车辆停-走
-
-前方车辆先静止 2 秒，然后起步加速，测试 Ego 的跟停-跟启能力。
-
-![目标车辆停-走](docs/scenarios/4d_stop_go.png)
-
-#### 5.a — 行人横穿道路（紧急避险）
-
-行人突然横穿道路，Ego 需要紧急制动。
-
-![行人横穿道路](docs/scenarios/5a_pedestrian_emergency.png)
-
-#### 5.b — 自行车横穿道路（紧急避险）
-
-自行车突然横穿道路，Ego 需要紧急避让。
-
-![自行车横穿道路](docs/scenarios/5b_bike_emergency.png)
-
-#### 5.c — 目标车辆切出后存在静止车辆
-
-前车切出后，暴露出后方静止车辆，Ego 需及时制动。
-
-![切出后存在静止车辆](docs/scenarios/5c_cutout_then_static.png)
-
-#### 5.d — 前方车辆紧急制动
-
-前方车辆正常行驶时突然紧急制动，Ego 需迅速反应。
-
-![前方车辆紧急制动](docs/scenarios/5d_emergency_brake.png)
-
-#### 5.e — 紧急转弯危险情况
-
-前方出现障碍物，Ego 需要紧急转弯避让。
-
-![紧急转弯危险情况](docs/scenarios/5e_emergency_swerve.png)
-
-#### 5.f — 静止行人目标误触发
-
-静止不动的行人，测试系统是否会误触发制动/转向。
-
-![静止行人目标误触发](docs/scenarios/5f_static_ped_false.png)
-
-#### 5.g — 移动行人目标误触发
-
-横向移动的行人，测试系统对运动方向判断的准确性。
-
-![移动行人目标误触发](docs/scenarios/5g_moving_ped_false.png)
-
-#### 6.a — 停车点
-
-Ego 车辆按路线行驶至指定停车点并停靠。
-
-![停车点](docs/scenarios/6a_parking_spot.png)
-
-#### 6.b — 港湾式站台
-
-Ego 车辆驶入港湾式公交站台停靠。
-
-![港湾式站台](docs/scenarios/6b_bus_bay.png)
-
-#### 6.c — 普通站台
-
-Ego 车辆在普通路边站台停靠，旁边有等车行人（Agent 1）。
-
-![普通站台](docs/scenarios/6c_regular_bus_stop.png)
+| **6.a** | 停车点 | `EgoRouteFollowScene` | ![6a](27.png) |
+| **6.b** | 港湾式站台 | `EgoRouteFollowScene` | ![6b](27.png) |
+| **6.c** | 普通站台 | `EgoRouteFollowScene` | ![6c](27.png) |
+
+## 绘制及启动详细参数
+[绘图及运行详细文档](waypoints操作说明.md)
