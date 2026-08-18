@@ -320,3 +320,27 @@ videos/
 
 ## 绘制及启动详细参数
 [绘图及运行详细文档](waypoints操作说明.md)
+
+## 断点重续功能
+### 新增参数
+
+`--resume` ：启用断点恢复（默认关闭）
+### 运行机制
+`保存`：每完成一个场景，自动将已完成场景集合 + 测试记录写入{scenario}_checkpoint.pkl，同时增量更新 {scenario}_result.pkl。
+
+`恢复`：再次运行加上 --resume 参数，程序会：
+  1. 检查 {scenario}_checkpoint.pkl 是否存在
+  2. 如果存在，读取已完成的场景名称集合和已有记录
+  3. 跳过已完成的场景，从下一个未完成的场景继续运行
+  4. 新完成的场景追加到记录中
+
+###  使用方式
+```bash
+  # 首次运行（正常执行）
+  python tools/run.py --input_dir ./save_scenarios/ --town TOWN10HD_Opt --scenario 3a
+
+  # 中断后恢复（跳过已完成的场景）
+  python tools/run.py --input_dir ./save_scenarios/ --town TOWN10HD_Opt --scenario 3a --resume
+
+  断点文件保存在 videos/{scenario}/{scenario}_checkpoint.pkl，与视频和结果文件在同一目录。
+```

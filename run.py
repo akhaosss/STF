@@ -222,6 +222,8 @@ def main():
                         help='Ratio of cars among NPCs (default: 0.50)')
     parser.add_argument('--npc_cyclist_ratio', type=float, default=0.30,
                         help='Ratio of cyclists among NPCs (default: 0.30, remaining = pedestrians)')
+    parser.add_argument('--resume', action='store_true', default=False,
+                        help='Resume from checkpoint if available (skips already completed scenarios)')
 
     args = parser.parse_args()
 
@@ -234,13 +236,30 @@ def main():
 
     VIDEO_DIR = os.path.join(args.video_dir, args.scenario)
     RESULT_PKL = os.path.join(VIDEO_DIR, f"{args.scenario}_result.pkl")
+    CHECKPOINT_PKL = os.path.join(VIDEO_DIR, f"{args.scenario}_checkpoint.pkl")
     os.makedirs(VIDEO_DIR, exist_ok=True)
     scenario_files = get_sorted_scenario_files(args.input_dir)
     if not scenario_files:
         print("❌ No scenarios found")
         return
 
+    # ======================
+    # 断点恢复
+    # ======================
     test_records = []
+    completed_scenarios = set()
+
+    if args.resume and os.path.exists(CHECKPOINT_PKL):
+        try:
+            with open(CHECKPOINT_PKL, "rb") as f:
+                cp = pickle.load(f)
+            completed_scenarios = cp.get("completed", set())
+            test_records = cp.get("records", [])
+            print(f"🔄 发现断点，已恢复 {len(completed_scenarios)} 个已完成场景，共 {len(test_records)} 条记录")
+        except Exception as e:
+            print(f"⚠️ 断点文件读取失败 ({e})，将从头开始运行")
+            completed_scenarios = set()
+            test_records = []
 
     pygame.init()
     client = carla.Client(HOST, PORT)
@@ -250,6 +269,12 @@ def main():
 
     for idx, cfg_path in enumerate(scenario_files):
         scenario_name = os.path.basename(cfg_path).replace(".json", "")
+
+        # 断点跳过
+        if args.resume and scenario_name in completed_scenarios:
+            print(f"⏭️ 跳过 {scenario_name} (已在上一轮完成)")
+            continue
+
         print(f"\n======= Running {scenario_name} ({idx+1}/{len(scenario_files)}) =======")
 
         # ======================
@@ -411,7 +436,22 @@ def main():
             "route_complete": False
         }
         test_records.append(record)
+        completed_scenarios.add(scenario_name)
         print(f"✅ {scenario_name} | collision: {running_status}")
+
+        # ======================
+        # 保存断点（每完成一个场景就写一次）
+        # ======================
+        if args.resume:
+            try:
+                with open(CHECKPOINT_PKL, "wb") as f:
+                    pickle.dump({"completed": completed_scenarios, "records": test_records}, f)
+                # 同时更新结果 pkl，方便中断后也能看到部分结果
+                df_inc = pd.DataFrame(test_records)
+                with open(RESULT_PKL, "wb") as f:
+                    pickle.dump(df_inc, f)
+            except Exception as e:
+                print(f"⚠️ 保存断点失败: {e}")
 
         collision_sensor.stop()
         collision_sensor.destroy()
