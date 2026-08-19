@@ -8,7 +8,7 @@ CONFIG_PATH="${REPO_ROOT}/config/roundabout_2b.yaml"
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "用法：./scripts/run_roundabout_experiments.sh"
-    echo "按 behavior -> tcp 顺序正式运行两种 ADS。"
+    echo "可选对比流程：按 behavior -> tcp 顺序运行两种仓库示例控制器。"
     echo "动态参数统一编辑：${CONFIG_PATH}"
     exit 0
 fi

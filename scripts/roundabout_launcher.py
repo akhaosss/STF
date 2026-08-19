@@ -430,11 +430,14 @@ def launch_editor(config, child_env):
 
 def validate_formal_run(config, models=("behavior", "tcp")):
     if not config["input_dir"].is_dir():
-        raise ConfigError("场景目录不存在：{}；请先运行编辑器并按 S 保存".format(
-            config["input_dir"]))
+        raise ConfigError(
+            "场景目录不存在：{}；请检查runner.input_dir，发布数据默认位于"
+            "save_scenarios/2b/definitions".format(config["input_dir"]))
     scenario_files = sorted(config["input_dir"].glob("scenario_2b_*.json"))
     if not scenario_files:
-        raise ConfigError("没有找到 scenario_2b_*.json；请先在编辑器按 S 保存场景")
+        raise ConfigError(
+            "没有找到scenario_2b_*.json；请检查runner.input_dir或恢复仓库发布的"
+            "save_scenarios/2b/definitions数据")
     if "tcp" in models:
         if config["tcp_model_path"] is None:
             raise ConfigError("请在 YAML 的 ads.tcp.model_path 填写 TCP checkpoint")
@@ -661,7 +664,7 @@ def launch_behavior_screening(config, child_env):
     manifest["return_code"] = 0
     manifest["finished_at"] = datetime.now(timezone.utc).isoformat()
     _write_manifest(manifest_path, manifest)
-    print("\nBehavior筛选已完成；请使用视频和2b_result.csv/json筛选场景。")
+    print("\nBehavior参考运行已完成；请使用视频和2b_result.csv/json查看结果。")
     return 0
 
 

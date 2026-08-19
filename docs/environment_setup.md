@@ -22,7 +22,7 @@ PyTorch/Torchvision：1.13.1 / 0.14.1
 - CARLA 0.9.16 Server或当前机器的0.9.16源码构建；
 - 与Python 3.10匹配的CARLA 0.9.16 wheel；
 - FFmpeg并启用H.264编码；
-- TCP正式实验所需checkpoint；
+- 仅在使用仓库TCP示例时准备对应checkpoint；
 - TCP实时运行建议使用可用的NVIDIA GPU/CUDA。
 
 编辑器和behavior ADS不要求CUDA。TCP代码可以回退CPU，但可能无法满足实时实验要求；是否强制CUDA由 `config/roundabout_2b.yaml` 的 `ads.tcp.require_cuda` 控制。
@@ -47,10 +47,9 @@ python --version
 
 ## 3. 安装和核对依赖
 
-从仓库根目录执行：
+在仓库根目录执行：
 
 ```bash
-cd /home/fsm/STF/SMap/STF
 python -m pip install -r environment/requirements.txt
 ```
 
@@ -60,11 +59,7 @@ python -m pip install -r environment/requirements.txt
 
 ## 4. 安装匹配的 CARLA Python API
 
-先确认CARLA根目录。当前机器示例：
-
-```text
-/home/fsm/Carla/carla
-```
+先确认本机CARLA根目录，以下用`<CARLA_ROOT>`表示。
 
 其中应存在：
 
@@ -108,9 +103,9 @@ conda run -n carla0916 ffmpeg -version
 
 输出配置应包含 `--enable-libx264`，否则 `run.py` 可能无法生成MP4。
 
-## 6. 准备 TCP checkpoint
+## 6. 可选：准备TCP checkpoint
 
-正式环岛实验同时运行behavior和TCP两种ADS，因此启动前必须准备TCP checkpoint，并在统一YAML中填写：
+只有运行仓库TCP接入示例时才需要checkpoint，并在统一YAML中填写：
 
 ```yaml
 ads:
@@ -136,19 +131,19 @@ ads:
 - Pygame、NumPy、Pandas、ImageIO、PyYAML、Pillow、Torch和Torchvision；
 - `agents.navigation.GlobalRoutePlanner`；
 - FFmpeg/libx264和实际MP4写入；
-- CUDA要求；
-- TCP checkpoint；
+- CUDA状态；
+- 可选TCP checkpoint；
 - CARLA Server连接、客户端/服务端版本和地图名称。
 
-CARLA Server未启动时，环境检查会把连接标为警告；核心依赖、checkpoint或YAML要求不满足时返回非零状态。
+CARLA Server未启动时，环境检查会把连接标为警告。未配置TCP checkpoint只表示TCP示例不可用，不阻止编辑器或Behavior参考控制器运行；配置了无效checkpoint时仍会报错。
 
 ## 8. 启动 CARLA Server
 
-当前机器是CARLA源码/UE4Editor构建：
+CARLA源码/UE4Editor构建可使用：
 
 ```bash
 conda activate carla0916
-cd /home/fsm/Carla/carla
+cd <CARLA_ROOT>
 ./CarlaUE4-with-coredump.sh -windowed -benchmark -fps=20 -carla-port=2000
 ```
 
@@ -156,16 +151,13 @@ cd /home/fsm/Carla/carla
 
 ## 9. 第一次运行
 
-环岛2.b：
+仓库已经包含可运行的环岛2.b场景定义。CARLA加载`STF-2-b`后，可直接运行参考控制器：
 
 ```bash
-cd /home/fsm/STF/SMap/STF
-./scripts/start_roundabout_editor.sh
-# 在编辑器中完成场景并按S保存
-./scripts/run_roundabout_experiments.sh
+./scripts/run_roundabout_behavior.sh
 ```
 
-完整流程见 [环岛启动与正式实验](scenarios/2b_roundabout/startup.md)，国标场景、仓库场景、对应关系与工程参数边界见 [环岛场景定义](scenarios/2b_roundabout/README.md)。
+只运行部分场景、结果位置和ADS接入边界见[直接运行已有场景](scenarios/2b_roundabout/run_existing.md)。需要修改路线时再使用`./scripts/start_roundabout_editor.sh`，完整编辑流程见[环岛编辑与扩展](scenarios/2b_roundabout/startup.md)。
 
 信号灯1.d见 [机动车信号灯场景](scenarios/1d_motor_vehicle_signal/README.md)。其他场景见 [通用编辑器与运行器](README.md)。
 

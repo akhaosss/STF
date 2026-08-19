@@ -5,12 +5,15 @@
 > 第一次使用请从仓库根目录 [README](../README.md) 开始，并按
 > [环境安装与验证](environment_setup.md) 准备与 CARLA Server 匹配的
 > 0.9.16 Python API。本文件保留通用场景操作；专项定义、配置和判定统一放在
-> `docs/scenarios/<场景编号_名称>/`。
+> `docs/scenarios/<场景编号_名称>/`。**2.b环岛用户不要使用本文件中的Trigger、
+> 普通右键放车、64种天气或直接`run.py`示例**，应从
+> [直接运行已有2.b场景](scenarios/2b_roundabout/run_existing.md)开始。
 
 专项文档入口见 [场景索引](scenarios/README.md)。当前包括：
 
 - [1.d 机动车信号灯](scenarios/1d_motor_vehicle_signal/README.md)
 - [2.b 环形路口](scenarios/2b_roundabout/README.md)
+- [2.b 直接运行已有场景](scenarios/2b_roundabout/run_existing.md)
 - [2.b 启动与编辑步骤](scenarios/2b_roundabout/startup.md)
 - [2.b 结果参数与国标对应](scenarios/2b_roundabout/results_and_parameters.md)
 
@@ -45,7 +48,7 @@
    不要直接安装与 Server 版本不匹配的 `carla` 包；0.9.16 wheel 的准备方式见
    [环境安装与验证](environment_setup.md)。
 
-3. （可选）如果使用 TCP 模型控制，需要准备 `tcp/best_model.ckpt`。
+3. （可选）如果使用TCP模型控制，需要准备对应checkpoint；具体路径由专项配置指定。
 
 ---
 
@@ -355,10 +358,10 @@ videos/
 ###  使用方式
 ```bash
   # 首次运行（正常执行）
-  python tools/run.py --input_dir ./save_scenarios/ --town TOWN10HD_Opt --scenario 3a
+  python run.py --input_dir ./save_scenarios/ --town TOWN10HD_Opt --scenario 3a
 
   # 中断后恢复（跳过已完成的场景）
-  python tools/run.py --input_dir ./save_scenarios/ --town TOWN10HD_Opt --scenario 3a --resume
+  python run.py --input_dir ./save_scenarios/ --town TOWN10HD_Opt --scenario 3a --resume
 
   结果 ledger 与视频、Markdown、JSON、CSV 和 Pickle 结果保存在同一输出目录。
 ```

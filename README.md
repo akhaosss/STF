@@ -18,18 +18,23 @@
 
 3. 根据目标场景进入专项文档：
 
-   - 环形路口 2.b：[场景定义与对应关系](docs/scenarios/2b_roundabout/README.md)、[启动与正式实验](docs/scenarios/2b_roundabout/startup.md)、[参数、证据与结果目录](docs/scenarios/2b_roundabout/results_and_parameters.md)；
+   - 环形路口 2.b：[直接运行已有场景](docs/scenarios/2b_roundabout/run_existing.md)、[场景定义与对应关系](docs/scenarios/2b_roundabout/README.md)、[编辑与扩展](docs/scenarios/2b_roundabout/startup.md)、[参数、证据与结果目录](docs/scenarios/2b_roundabout/results_and_parameters.md)；
    - 机动车信号灯 1.d：[场景说明](docs/scenarios/1d_motor_vehicle_signal/README.md)；
    - 其他通用场景：[编辑器与运行器手册](docs/README.md)。
 
-环形路口流程使用一份带注释的统一配置：[config/roundabout_2b.yaml](config/roundabout_2b.yaml)。修改 YAML 后分别执行：
+仓库已经发布可直接运行的环形路口场景定义，位于`save_scenarios/2b/definitions/`。启动CARLA并核对[统一配置](config/roundabout_2b.yaml)后，可以直接运行参考控制器示例：
+
+```bash
+./scripts/run_roundabout_behavior.sh
+```
+
+只有修改路线、车辆布置或拓扑时才启动编辑器：
 
 ```bash
 ./scripts/start_roundabout_editor.sh
-./scripts/run_roundabout_experiments.sh
 ```
 
-正式环岛实验依次测试 `behavior` 和 `tcp` 两种 ADS，并分别保存结果。
+仓库参考控制器和TCP均为ADS接入示例，不要求使用者依次完成双ADS实验。具体ADS、重复次数和正式判定方式由测试计划确定。
 
 ## 文档地图
 
@@ -38,11 +43,12 @@
 | 阅读顺序 | 文档 | 用途 | 适用版本/状态 |
 |---|---|---|---|
 | 1 | [环境安装与验证](docs/environment_setup.md) | 从零创建 Conda 环境、安装 CARLA Python API、检查 FFmpeg/CUDA | 当前主流程，CARLA 0.9.16 |
-| 2 | [通用编辑器与运行器](docs/README.md) | 非专项场景的编辑、天气、运行及输出说明 | 当前通用入口；专项场景以专项文档为准 |
-| 3 | [环岛场景定义与对应关系](docs/scenarios/2b_roundabout/README.md) | 国标场景、仓库场景、逐项映射、判定边界 | 当前 2.b 设计说明 |
-| 4 | [环岛启动与正式实验](docs/scenarios/2b_roundabout/startup.md) | YAML、编辑器、一键运行 behavior/TCP 两种 ADS | 当前 2.b 操作手册 |
-| 5 | [环岛参数、证据与结果目录](docs/scenarios/2b_roundabout/results_and_parameters.md) | 参数来源/单位、国标对应、20 Hz遥测和批次目录 | 当前 2.b 数据字典 |
-| 6 | [机动车信号灯 1.d](docs/scenarios/1d_motor_vehicle_signal/README.md) | 路线矩阵、信号灯时序、运行和结果 | 当前 1.d 专项说明 |
+| 2 | [直接运行已有2.b场景](docs/scenarios/2b_roundabout/run_existing.md) | 使用随仓库发布的JSON，不打开编辑器即可运行 | 当前2.b最短入口 |
+| 3 | [环岛场景定义与对应关系](docs/scenarios/2b_roundabout/README.md) | 国标场景、仓库场景、逐项映射、判定边界 | 当前2.b设计说明 |
+| 4 | [环岛编辑与扩展](docs/scenarios/2b_roundabout/startup.md) | 修改路线、天气和车型 | 需要生成新场景时阅读 |
+| 5 | [环岛参数、证据与结果目录](docs/scenarios/2b_roundabout/results_and_parameters.md) | 参数来源/单位、国标对应、20 Hz遥测和批次目录 | 当前2.b数据字典 |
+| 6 | [机动车信号灯 1.d](docs/scenarios/1d_motor_vehicle_signal/README.md) | 路线矩阵、信号灯时序、运行和结果 | 当前1.d专项说明 |
+| 7 | [通用编辑器与运行器](docs/README.md) | 非专项场景的旧通用流程 | 2.b/1.d用户无需阅读 |
 
 ### 历史或辅助项目文档
 
@@ -50,7 +56,7 @@
 
 | 文档 | 关系与使用方式 |
 |---|---|
-| [waypoints操作说明.md](waypoints操作说明.md) | 旧版通用快捷键和碰撞增强说明；2.b/1.d 应以专项文档为准 |
+| [waypoints操作说明.md](docs/waypoints操作说明.md) | 旧版通用快捷键和碰撞增强说明；2.b/1.d 应以专项文档为准 |
 | [waypoints.md](waypoints.md) | 更早期的编辑器操作记录，部分按键和输出格式已经变化，仅用于追溯 |
 | [机动车信号灯 ScenarioRunner 实验记录](docs/james.md) | TCP 上游 ScenarioRunner/旧 CARLA 0.9.10.1 实验记录，不等同于当前根目录 `run.py` 的 1.d 流程 |
 | [good_env.txt](good_env.txt) | 某台机器包含 ROS、Autoware、CUDA的完整包快照，不是最小依赖清单 |
@@ -80,7 +86,9 @@
             │
             ├── 通用场景 ── docs/README.md
             ├── 1.d信号灯 ─ docs/scenarios/1d_motor_vehicle_signal/README.md
-            └── 2.b环岛 ─── docs/scenarios/2b_roundabout/README.md
+            └── 2.b环岛 ─── docs/scenarios/2b_roundabout/run_existing.md
+                              ├── save_scenarios/2b/definitions/
+                              ├── docs/scenarios/2b_roundabout/README.md
                               ├── config/roundabout_2b.yaml
                               └── docs/scenarios/2b_roundabout/startup.md
 

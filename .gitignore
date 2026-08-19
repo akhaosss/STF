@@ -3,9 +3,12 @@
 __pycache__/
 *.py[cod]
 
-# Generated 2.b scenario expansions are reproducible from the editor route,
-# unified YAML configuration, and expansion tool; do not commit all variants.
-/save_scenarios/2b/definitions/
+# GB/T 41798 2.b definitions are part of the distributable scenario dataset.
+# Keep them in Git so a fresh clone can run without opening the editor.
 
 # Local route backups are deliberately outside the active launcher input.
 /save_scenarios/2b/bp/
+
+# User-selected subsets for local smoke runs; the published definitions above
+# remain versioned.
+/save_scenarios/2b/runsets/

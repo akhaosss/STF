@@ -8,7 +8,7 @@ CONFIG_PATH="${REPO_ROOT}/config/roundabout_2b.yaml"
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "用法：./scripts/run_roundabout_behavior.sh"
-    echo "Behavior场景筛选：每个场景定义只运行一次，不检查或启动 TCP。"
+    echo "Behavior参考控制器示例：每个场景定义运行一次，不检查或启动TCP。"
     echo "动态参数统一编辑：${CONFIG_PATH}"
     exit 0
 fi

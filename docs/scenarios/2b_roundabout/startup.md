@@ -1,22 +1,21 @@
-# 环形路口 2.b 启动与正式实验说明
+# 环形路口2.b编辑与场景扩展
 
-环岛编辑和正式实验共用一份配置：[config/roundabout_2b.yaml](../../../config/roundabout_2b.yaml)。日常使用只修改 YAML，不需要拼接 `waypoints.py` 或 `run.py` 命令行参数。参数单位、来源以及国标/工程参数对应关系见[参数、证据与结果目录](results_and_parameters.md)。
+本文件说明如何修改环岛路线，以及如何用一条路线生成天气和车型组合。仓库已经包含可运行的场景定义；只想运行现有数据时，请直接阅读[直接运行已有2.b场景](run_existing.md)，无需启动编辑器。
 
-第一次使用仓库时，应先按 [环境安装与验证](../../environment_setup.md) 完成CARLA 0.9.16/Python 3.10环境准备；全部文档关系见 [根README](../../../README.md)。
+编辑器和运行器共用[统一配置](../../../config/roundabout_2b.yaml)。常用参数在YAML中调整，不需要手工拼接`waypoints.py`或`run.py`命令行。参数单位和来源见[参数、证据与结果目录](results_and_parameters.md)。
 
-正式实验包含两个独立 ADS：
+仓库提供两个控制器接入示例：
 
-1. `behavior` ADS；
-2. `tcp` ADS。
+1. `behavior`：仓库已有的`EgoRouteFollowScene.follow_route`参考控制器，不是CARLA官方`BehaviorAgent`；
+2. `tcp`：需要单独checkpoint的可选模型示例。
 
-启动器按上述顺序使用完全相同的一批场景定义执行两组正式实验，并隔离保存结果。每份定义在正式启动时自动展开3次；编辑器本身不要求或生成三份副本。`behavior` 在本流程中也是被测 ADS，不只是设施自检工具。
+接入方可以替换为自己的ADS，不要求按Behavior→TCP顺序执行。仓库保留双控制器和3次重复能力，用于需要对比或重复评估的项目；它不是运行场景数据的前置条件。
 
 ## 1. 修改统一配置
 
 打开：
 
 ```bash
-cd /home/fsm/STF/SMap/STF
 vim config/roundabout_2b.yaml
 ```
 
@@ -25,19 +24,17 @@ vim config/roundabout_2b.yaml
 - Conda 环境和 CARLA 根目录；
 - CARLA Server 地址、端口、等待时间和预期地图；
 - 编辑器JSON输出目录、随机种子、限速回退、天气配置、VT1/VT2车型组合，以及统一的VT1/VUT冲突时间差；
-- 正式实验输入目录、补测次数和统一结果目录；
-- TCP checkpoint 和是否强制要求 CUDA。
+- 运行输入目录、补测次数和结果目录；
+- 可选TCP checkpoint和CUDA要求。
 
-所有相对路径均以仓库根目录为基准。正式运行前至少确认：
+所有相对路径均以仓库根目录为基准。至少确认目标地图：
 
 ```yaml
 connection:
   expected_map: <目标地图名>
-
-ads:
-  tcp:
-    model_path: <TCP checkpoint路径>
 ```
+
+只有运行TCP示例时才需要填写`ads.tcp.model_path`。
 
 如果地图能提供 OpenDRIVE 限速，保持 `editor.speed_limit_kmh: null`；只有地图缺少限速证据时才填写经过确认的工程限速。
 
@@ -67,8 +64,6 @@ editor:
 已有2.b JSON可以直接用离线扩展工具生成天气×车型场景。工具会把旧版同一路线的`trial_01/02/03`自动去重为一条基础路线，保留VUT/VT1路线、VT2位置、拓扑、门线和工程参数，只替换天气与VT1/VT2车型：
 
 ```bash
-cd /home/fsm/STF/SMap/STF
-
 # 只查看路线数、输出数量和预计体积，不写文件
 python3 tools/expand_roundabout_scenarios.py \
   --input-dir save_scenarios/2b \
@@ -85,23 +80,21 @@ python3 tools/expand_roundabout_scenarios.py \
 
 ## 2. 启动 CARLA
 
-使用 CARLA 源码/UE4Editor 版本：
+使用CARLA源码/UE4Editor版本时：
 
 ```bash
 conda activate carla0916
-cd /home/fsm/Carla/carla
+cd <CARLA_ROOT>
 ./CarlaUE4-with-coredump.sh -windowed -benchmark -fps=20 -carla-port=2000
 ```
 
-CARLA 应加载 YAML 中 `connection.expected_map` 指定的地图。
-  即地图“STF-2-b”
+CARLA应加载YAML中`connection.expected_map`指定的地图，当前发布数据使用`STF-2-b`。
 
 ## 3. 一键启动环岛编辑器
 
 新终端中执行：
 
 ```bash
-cd /home/fsm/STF/SMap/STF
 ./scripts/start_roundabout_editor.sh
 ```
 
@@ -142,7 +135,7 @@ cd /home/fsm/STF/SMap/STF
 - `H`：STEP 1确认后，同时切换详细步骤面板和地图文字；需要复核编号时按`H`，完成后再按一次恢复简洁视图。颜色固定为：进口绿色、出口蓝色、VUT及其入口青色、出口1黄色、出口2橙色、出口3橙红色、VT2及下游入口紫色。
 - 高倍缩放时，稀疏路线锚点之间的屏幕距离可能很大。编辑器只在可见锚点附近绘制有限长度的路线尾段；两端均在屏幕外的线段不绘制，避免形成横贯窗口的彩色渲染条。缩小视图后完整连接线会自然恢复。
 
-按`S`成功后，终端和pygame会显示绝对输出路径。默认是`/home/fsm/STF/SMap/STF/save_scenarios/2b/definitions/`，其中包含960份场景定义JSON和`2b_scenario_manifest.json`。数量始终按实际天气数乘以车型组合数计算；若YAML修改了配置或输出目录，以界面和manifest为准。
+按`S`成功后，终端和pygame会显示输出路径。默认是`save_scenarios/2b/definitions/`，其中包含场景定义JSON和`2b_scenario_manifest.json`。数量按实际天气数乘以车型组合数计算；若YAML修改了配置或输出目录，以界面和manifest为准。
 - `S`：校验并按天气×车型组合生成场景定义，不生成重复试验副本。
 - `Q`：退出。
 
@@ -181,13 +174,11 @@ VT1和VT2不是放在任意邻近车道：
 
 紧凑面板到达STEP 4或STEP 6时会自动用彩色专用提示替换普通“最近操作”行；按 `H` 可同时查看两辆目标车的完整位置规则。
 
-## 4. 先运行一次 Behavior，筛选场景
+## 4. 运行参考控制器示例
 
-只运行 Behavior、不检查 TCP checkpoint，也不会在完成后自动进入 TCP。该入口是
-“场景筛选模式”：每个场景定义只执行一次，不展开国标要求的三次正式重复：
+该入口不检查TCP checkpoint，也不会自动进入TCP。每个场景定义执行一次，适合验证数据和展示接入流程：
 
 ```bash
-cd /home/fsm/STF/SMap/STF
 ./scripts/run_roundabout_behavior.sh
 ```
 
@@ -196,18 +187,17 @@ cd /home/fsm/STF/SMap/STF
 当前一次有效绘制按`120种天气 × 8组目标车型`生成960个场景定义；`bp/`中的旧路线
 不会被读取。筛选阶段使用 `runner.screening.max_invalid_retries: 0`，INVALID不会自动补测。
 
-Behavior筛选会在`runner.screening.output_root`下建立独立的
+参考运行会在`runner.screening.output_root`下建立独立的
 `screening_<UTC时间>/behavior/`批次目录。每个condition有
 `screening/attempt_01/visualization.mp4`、`summary.json`、`events.json`和20 Hz
-`telemetry.csv.gz`；`2b_result.csv`适合快速排序筛选。筛选结果不形成“三次均通过”
-的国标正式结论。
+`telemetry.csv.gz`；`2b_result.csv`适合快速排序筛选。该示例每个condition只运行一次，
+不形成3次重复结论。完整的直接运行步骤见[直接运行已有场景](run_existing.md)。
 
-## 5. 一键运行两种正式 ADS
+## 5. 可选：双控制器重复对比
 
-编辑并保存至少一份场景定义后执行：
+需要用相同场景对比仓库Behavior和TCP示例时执行：
 
 ```bash
-cd /home/fsm/STF/SMap/STF
 ./scripts/run_roundabout_experiments.sh
 ```
 
@@ -228,7 +218,7 @@ cd /home/fsm/STF/SMap/STF
               └── tcp ADS
 ```
 
-任一 ADS 启动器异常退出时，双 ADS 正式实验标记为未完成，并停止后续环节。正常的场景 PASS/FAIL 不属于启动器异常，仍以各自结果报告为准。
+任一控制器启动异常时，对比批次标记为未完成并停止后续环节。该流程是可选示例，不限制接入方使用其他ADS或独立测试计划。
 
 ## 6. 结果
 
@@ -237,7 +227,6 @@ cd /home/fsm/STF/SMap/STF
 轻量`2b_result.pkl`只作为兼容批次索引；每个attempt的`telemetry.csv.gz`保存逐帧VUT、VT1、VT2运动学。CARLA Server加载对应地图后，可将规划路线和实际轨迹叠加查看：
 
 ```bash
-cd /home/fsm/STF/SMap/STF
 ./scripts/view_roundabout_run.sh \
   runs/.../route_0001_exit2_capable/<condition>/trial_01/attempt_01/telemetry.csv.gz
 ```
@@ -275,7 +264,7 @@ runs/roundabout_formal/
     └── tcp/...
 ```
 
-联合清单记录YAML哈希、地图、CARLA版本、源场景定义、自动展开后的正式实例、两个ADS的执行顺序和完成状态。两个ADS的法规判定必须分别查看各自的`2b_result.md`或condition下的`aggregate.json`，不会合并成一个通过结论。字段、单位、指纹含义、仿真证据边界和国标对应关系见[参数、证据与结果目录](results_and_parameters.md)。
+可选对比流程的联合清单记录YAML哈希、地图、CARLA版本、源场景定义、重复实例、两个控制器的执行顺序和完成状态。两组结果分别保存在各自的`2b_result.md`和condition目录中，不合并成一个通过结论。字段、单位、指纹含义和仿真证据边界见[参数、证据与结果目录](results_and_parameters.md)。
 
 ## 7. 常见错误
 

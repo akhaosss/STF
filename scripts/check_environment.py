@@ -167,7 +167,9 @@ def check_video(modules, report):
 def check_tcp(config, modules, report):
     checkpoint = config["tcp_model_path"]
     if checkpoint is None:
-        report.fail("YAML ads.tcp.model_path尚未填写")
+        report.warn(
+            "未配置TCP checkpoint；编辑器和Behavior参考控制器可用，"
+            "TCP示例不可用")
     elif not checkpoint.is_file():
         report.fail("TCP checkpoint不存在：{}".format(checkpoint))
     else:
@@ -250,9 +252,9 @@ def main(argv=None):
     print("\n环境检查汇总：{} failure(s)，{} warning(s)".format(
         len(report.failures), len(report.warnings)))
     if report.failures:
-        print("正式双ADS实验尚未就绪。")
+        print("当前配置仍有必须修复的问题。")
         return 1
-    print("环境满足当前主流程要求。")
+    print("环境满足编辑器和参考运行流程要求；可选功能以警告为准。")
     return 0
 
 

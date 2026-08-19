@@ -1,6 +1,6 @@
 # 2.b 参数、证据与结果目录
 
-> 本文回答三个问题：参数从哪里来、它对应国标还是仿真实现、运行后到哪里找证据。场景定义与判定逻辑见 [README](README.md)，实际操作顺序见 [启动手册](startup.md)。
+> 本文回答三个问题：参数从哪里来、它对应国标还是仿真实现、运行后到哪里找证据。直接运行发布数据见[已有场景运行说明](run_existing.md)，修改路线见[编辑与扩展](startup.md)。
 
 ## 1. 四层对象不能混用
 
@@ -8,7 +8,7 @@
 |---|---|---:|---|
 | route | 一次人工绘制的VUT起点/路线、VT1起点/路线、VT2位置及STEP 1拓扑 | 是，只有路线改变才重画 | `route_id` + `route_definition_fingerprint` |
 | condition | route加天气、VT1/VT2车型、能力分支、计划出口和工程参数 | 否，由编辑器自动展开 | 人类可读`condition_id` + `condition_fingerprint` |
-| trial | 同一个condition的一次正式重复，国标正式结论需要trial 1/2/3 | 否，由正式启动器展开 | `matrix_id` + `trial_index` + `trial_seed` |
+| trial | 同一个condition的一次重复；需要3次结论时使用trial 1/2/3 | 否，由重复评估启动器展开 | `matrix_id` + `trial_index` + `trial_seed` |
 | attempt | 某个trial因建场或证据无效后的重试 | 否，由运行器补测 | `attempt_index` |
 
 `condition_fingerprint`是完整条件的SHA-256；目录只使用其前10位，例如`c_39f6d72b3a`，完整值保存在JSON。旧字段`route_fingerprint`在正式重复元数据中继续保留用于兼容，但其历史含义实际是“完整条件指纹”；新数据应优先读`condition_fingerprint`。人工路线本身应读`route_definition_fingerprint`。
@@ -24,21 +24,21 @@
 | `connection.host/port` | 地址/端口 | `127.0.0.1:2000` | CARLA RPC连接 | 运行环境 |
 | `connection.wait_timeout_s` | s | 60 | 启动器等待Server的上限 | 工程参数 |
 | `connection.expected_map` | 地图名 | `STF-2-b` | 防止场景误用于另一张地图 | 审计约束 |
-| `editor.save_dir` | 路径 | `save_scenarios/2b/definitions` | 场景定义输出，不含正式重复 | 数据管理 |
+| `editor.save_dir` | 路径 | `save_scenarios/2b/definitions` | 场景定义输出；该目录也随仓库发布 | 数据管理 |
 | `editor.seed` | 整数 | 41798 | 场景展开和trial seed的根种子 | 可复现参数 |
 | `editor.speed_limit_kmh` | km/h或`null` | `null` | OpenDRIVE无可用限速时的人工确认回退 | 工程参数，不是国标给定值 |
 | `editor.conflict_sync.target_headway_s` | s | 1.0 | 期望VT1比VUT先经过共同冲突点的时间 | 工程参数 |
 | `editor.conflict_sync.tolerance_s` | s | 0.5 | 上述领先时间允许窗口 | 工程参数 |
 | `editor.weather_profiles` | 列表 | 全部内置天气 | 同一路线自动展开天气 | 场景条件 |
 | `editor.vehicle_profiles` | 列表 | 8组 | 只展开VT1/VT2车型，VUT不随之变化 | 场景条件 |
-| `runner.input_dir` | 路径 | definitions目录 | 正式/筛选读取范围 | 数据管理 |
-| `runner.repetitions` | 次 | 3 | 正式实验的固定重复数 | 国标5.2.1实现；不得用于筛选 |
-| `runner.max_invalid_retries` | 次 | 2 | 每个正式trial最多补测次数，不改变trial数量 | 工程参数 |
-| `runner.experiment_root` | 路径 | `runs/roundabout_formal` | 正式批次根目录 | 数据管理 |
+| `runner.input_dir` | 路径 | definitions目录 | 运行器读取范围 | 数据管理 |
+| `runner.repetitions` | 次 | 3 | 可选重复评估的trial数量 | 国标重复要求的实现参数；单次示例不使用 |
+| `runner.max_invalid_retries` | 次 | 2 | 重复评估时每个trial最多补测次数 | 工程参数 |
+| `runner.experiment_root` | 路径 | `runs/roundabout_formal` | 可选重复评估批次根目录 | 数据管理 |
 | `runner.screening.output_root` | 路径 | `runs/roundabout_screening` | 一次筛选根目录 | 数据管理 |
 | `runner.screening.max_invalid_retries` | 次 | 0 | 筛选是否补测 | 工程参数 |
-| `ads.tcp.model_path` | 文件 | 用户填写 | TCP checkpoint | 被测方法版本 |
-| `ads.tcp.require_cuda` | bool | false | 是否无CUDA即拒绝启动TCP | 运行环境 |
+| `ads.tcp.model_path` | 文件 | 默认空 | 可选TCP示例的checkpoint | 可选控制器配置 |
+| `ads.tcp.require_cuda` | bool | false | 运行TCP示例时是否强制CUDA | 运行环境 |
 
 天气与车型做笛卡尔积：当前`120种天气 × 8组车型 = 每条route生成960个condition`。这不会重新绘制路线。
 
@@ -112,7 +112,7 @@
 
 ## 5. 结果目录
 
-正式批次：
+可选重复评估批次：
 
 ```text
 runs/roundabout_formal/
@@ -134,7 +134,7 @@ runs/roundabout_formal/
     └── tcp/...
 ```
 
-筛选批次使用`runs/roundabout_screening/screening_<UTC时间>/behavior/.../screening/attempt_01/`，每个condition只跑一次，不生成正式三次结论。
+仓库参考控制器的单次示例使用`runs/roundabout_screening/screening_<UTC时间>/behavior/.../screening/attempt_01/`，每个condition只运行一次，不生成3次重复结论。
 
 文件关系：
 
@@ -149,6 +149,6 @@ runs/roundabout_formal/
 | `events.json` | 状态迁移、门线、碰撞、压线及夹具事件 |
 | `visualization.mp4` | 仿真可视化视频 |
 | `artifact_manifest.json` | 文件相对路径、字节数和SHA-256 |
-| `aggregate.json` | 同一ADS、同一condition、同一正式批次的3次判定与均值/标准差/最小/最大 |
+| `aggregate.json` | 同一控制器、同一condition的3次判定与均值/标准差/最小/最大 |
 
-量化统计不能替代法规判定：`aggregate.json`中的`quantitative_statistics`用于比较稳定性；最终`pass=true`仍要求trial 1、2、3选择出的有效attempt全部PASS。
+`aggregate.json`中的`quantitative_statistics`用于比较重复运行的稳定性。只有测试计划采用3次重复判定时，聚合`pass=true`才要求trial 1、2、3选出的有效attempt全部PASS。Behavior和TCP只是仓库接入示例，不要求组合成同一个正式结论。
