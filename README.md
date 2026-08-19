@@ -1,40 +1,79 @@
-# STF CARLA 场景编辑器与 ADS 测试运行器
+# STF GB/T 41798 2.b 环形路口场景分支
 
-本仓库使用 CARLA 生成、运行并记录自动驾驶测试场景。当前主流程基线为 **Ubuntu、Python 3.10、CARLA 0.9.16**，核心入口是：
+> 当前分支：`agent/gbt41798-roundabout-2b`
 
-- `waypoints.py`：交互式场景编辑器；
-- `run.py`：场景运行与结果记录；
-- `scripts/`：环境检查及 YAML 驱动的一键启动脚本；
-- `TCP/`：仓库内集成的 TCP 模型及其上游依赖代码。
+本分支在原STF/CARLA场景工具上增加GB/T 41798—2022第6.2.2条“环形路口”的场景定义、编辑、运行和证据记录能力，面向需要直接运行场景数据或接入自有ADS的使用者。
 
-## 新用户从这里开始
+## 本分支提供什么
 
-1. 按 [环境安装与验证](docs/environment_setup.md) 创建或检查兼容的Python环境；环境名称由使用者自行确定。
-2. 执行环境自检：
+- 一条已审核的VUT/VT1/VT2环岛路线；
+- 120种天气与8组VT1/VT2车型组合形成的960份可运行场景定义；
+- VUT、VT1开放路线及VT2静止位置的可视化编辑器；
+- 环岛入口、出口1/2/3、下游第1入口及目标车辆时序判定；
+- 视频、20 Hz遥测、事件和判定摘要；
+- 一个仓库参考控制器示例，以及供其他ADS复用的运行接口。
 
-   ```bash
-   ./scripts/check_environment.sh
-   ```
+场景数据位于[`save_scenarios/2b/definitions/`](save_scenarios/2b/definitions/)。这些JSON已经包含路线、车辆、天气、车型、拓扑、门线和工程参数，**只运行现有场景时无需打开编辑器**。
 
-3. 根据目标场景进入专项文档：
+## 最短使用流程
 
-   - 环形路口 2.b：[直接运行已有场景](docs/scenarios/2b_roundabout/run_existing.md)、[场景定义与对应关系](docs/scenarios/2b_roundabout/README.md)、[编辑与扩展](docs/scenarios/2b_roundabout/startup.md)、[参数、证据与结果目录](docs/scenarios/2b_roundabout/results_and_parameters.md)；
-   - 机动车信号灯 1.d：[场景说明](docs/scenarios/1d_motor_vehicle_signal/README.md)；
-   - 其他通用场景：[编辑器与运行器手册](docs/README.md)。
+### 1. 准备环境
 
-仓库已经发布可直接运行的环形路口场景定义，位于`save_scenarios/2b/definitions/`。启动CARLA并核对[统一配置](config/roundabout_2b.yaml)后，可以直接运行参考控制器示例：
+当前运行基线为Ubuntu、Python 3.10和CARLA 0.9.16。Conda环境名称由使用者自行确定，公共配置不绑定开发者机器上的环境名。完整安装方法见[环境安装与验证](docs/environment_setup.md)。
+
+激活兼容环境后，在仓库根目录执行：
+
+```bash
+./scripts/check_environment.sh
+```
+
+### 2. 启动CARLA
+
+启动CARLA 0.9.16 Server，并加载`STF-2-b`地图。发布的960份JSON与该地图的OpenDRIVE车道ID和坐标绑定；接入方必须准备相同地图，不能直接换成其他Town运行。
+
+RPC地址、端口、地图名、输入目录和输出目录统一配置在[`config/roundabout_2b.yaml`](config/roundabout_2b.yaml)。
+
+### 3. 先运行一个场景
+
+默认输入目录包含960份JSON，首次联调不应直接运行全部文件。按[直接运行已有场景](docs/scenarios/2b_roundabout/run_existing.md#3-只运行部分场景)建立一个本地`runsets/smoke`目录，并在YAML中将`runner.input_dir`指向该目录，然后执行：
 
 ```bash
 ./scripts/run_roundabout_behavior.sh
 ```
 
-只有修改路线、车辆布置或拓扑时才启动编辑器：
+该命令中的`behavior`是仓库已有的`EgoRouteFollowScene.follow_route`参考控制器，不是CARLA官方`BehaviorAgent`，也不是指定的正式ADS。它用于确认场景加载、车辆时序、证据记录和结果输出链路可以工作。
 
-```bash
-./scripts/start_roundabout_editor.sh
+结果默认写入：
+
+```text
+runs/roundabout_screening/screening_<UTC时间>/behavior/
 ```
 
-仓库参考控制器和TCP均为ADS接入示例，不要求使用者依次完成双ADS实验。具体ADS、重复次数和正式判定方式由测试计划确定。
+### 4. 根据用途继续
+
+| 目标 | 下一步 |
+|---|---|
+| 直接运行发布场景 | 阅读[已有场景运行说明](docs/scenarios/2b_roundabout/run_existing.md) |
+| 理解国标与JSON字段的对应关系 | 阅读[2.b场景定义](docs/scenarios/2b_roundabout/README.md) |
+| 修改路线、车辆位置或拓扑 | 阅读[编辑与场景扩展](docs/scenarios/2b_roundabout/startup.md)，然后运行`./scripts/start_roundabout_editor.sh` |
+| 查看参数来源、遥测和结果目录 | 阅读[参数、证据与结果目录](docs/scenarios/2b_roundabout/results_and_parameters.md) |
+| 接入乙方自有ADS | 先用参考控制器打通流程，再按[使用其他ADS](docs/scenarios/2b_roundabout/run_existing.md#4-使用其他ads)适配控制接口 |
+
+## 使用边界
+
+- 本分支提供仿真场景与证据记录方法，不声称一次仿真等同于物理场地认证。
+- Behavior参考控制器和TCP代码都是可选示例，不要求执行“双ADS正式实验”。
+- 场景筛选可以每个condition运行一次；只有具体测试计划要求时，才展开3次trial并聚合。
+- 修改天气或VT1/VT2车型可离线扩展已有路线；只有路线、车辆位置或拓扑改变时才需要重新编辑。
+- `runs/`属于本地实验结果，不进入Git；`save_scenarios/2b/definitions/`是交付数据，必须保留在Git中。
+
+## 仓库主要入口
+
+- `waypoints.py`：交互式场景编辑器；
+- `run.py`：场景运行与结果记录；
+- `scripts/`：环境检查及YAML驱动的启动脚本；
+- `roundabout_2b.py`：2.b配置校验、门线、重复试验和结果聚合；
+- `TCP/`：仓库集成的可选上游模型代码，不是本分支的必需运行环节。
 
 ## 文档地图
 
