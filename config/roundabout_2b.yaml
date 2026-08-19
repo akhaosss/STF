@@ -1,0 +1,137 @@
+# GB/T 41798—2022 6.2.2 环形路口场景统一配置
+#
+# 使用方式：
+#   1. 启动编辑器：./scripts/start_roundabout_editor.sh
+#   2. 只运行 Behavior：./scripts/run_roundabout_behavior.sh
+#   3. 按 Behavior -> TCP 运行两个 ADS：./scripts/run_roundabout_experiments.sh
+#
+# 所有相对路径均以仓库根目录为基准。修改本文件即可，不需要修改启动命令。
+
+schema_version: 1
+
+environment:
+  # 已安装 CARLA 0.9.16 Python API 的 Conda 环境。
+  conda_env: carla0916
+
+  # 留空时从 Conda 环境的 CARLA_UE4_ROOT/CARLA_0916_ROOT 自动读取。
+  # 仅在环境变量未配置时填写，例如：/home/fsm/Carla/carla
+  carla_root: ""
+
+connection:
+  # CARLA Server 地址与端口。编辑器和正式实验共用这组设置。
+  host: 127.0.0.1
+  port: 2000
+
+  # 启动脚本等待 CARLA Server 就绪的最长时间。
+  wait_timeout_s: 60
+
+  # 建议正式实验填写准确地图名；留空时自动采用 CARLA 当前加载的地图。
+  # 可以填写完整名称或最后一段，例如 SafeBenchHK。
+  expected_map: "STF-2-b"
+
+editor:
+  # 编辑器按 S 后生成场景定义的目录。这里不生成“三次重复试验”。
+  save_dir: ./save_scenarios/2b/definitions
+
+  # 场景和正式重复试验的基础随机种子；通常保持不变以保证可复现。
+  seed: 41798
+
+  # 仅当目标地图 OpenDRIVE 无法提供路线限速时填写已确认工程限速，单位 km/h。
+  # 有可审计限速时保持 null，程序优先使用地图限速。
+  speed_limit_kmh: null
+
+  # VT1/VUT交汇采用统一“穿过共同冲突点的先后时间差”，不为每条路线手写延时。
+  # 程序会用VUT起点到入口门线的真实路线长度换算VT1放行位置，并验证VT1先通过。
+  # 这些是仿真实现参数，不是GB/T 41798原始规定值。
+  conflict_sync:
+    # VT1应比VUT提前多少秒穿过同一冲突点。
+    target_headway_s: 1.0
+
+    # 允许不同ADS接近速度带来的时间误差；有效领先窗口为0.5～1.5秒。
+    tolerance_s: 0.5
+
+  # 天气场景列表。同一条VUT/VT1路线会对下列天气逐一生成场景。
+  # preset: all 表示复用通用生成器的全部15类×8档=120种天气。
+  # 也可改成单个preset（level为1～8），或用parameters直接写CARLA天气参数。
+  # 可用preset：sunny/cloudy/overcast/light_rain/heavy_rain/fog/wind/
+  # sandstorm/night/dusk/dawn/cold_fog/rainy_dusk/snowy_light/snowy_heavy。
+  weather_profiles:
+    - id: all_builtin_weather
+      preset: all
+
+  # 8组目标车型，与120种天气做笛卡尔积；VUT车型不随这里变化。
+  # model必须是目标CARLA版本中存在的vehicle.* blueprint。
+  vehicle_profiles:
+    - id: tesla_model3
+      vt1_model: vehicle.tesla.model3
+      vt2_model: vehicle.tesla.model3
+    - id: audi_tt
+      vt1_model: vehicle.audi.tt
+      vt2_model: vehicle.audi.tt
+    - id: bmw_grandtourer
+      vt1_model: vehicle.bmw.grandtourer
+      vt2_model: vehicle.bmw.grandtourer
+    - id: chevrolet_impala
+      vt1_model: vehicle.chevrolet.impala
+      vt2_model: vehicle.chevrolet.impala
+    - id: ford_mustang
+      vt1_model: vehicle.ford.mustang
+      vt2_model: vehicle.ford.mustang
+    - id: lincoln_mkz_2020
+      vt1_model: vehicle.lincoln.mkz_2020
+      vt2_model: vehicle.lincoln.mkz_2020
+    - id: nissan_patrol
+      vt1_model: vehicle.nissan.patrol
+      vt2_model: vehicle.nissan.patrol
+    - id: toyota_prius
+      vt1_model: vehicle.toyota.prius
+      vt2_model: vehicle.toyota.prius
+
+runner:
+  # 正式实验读取的场景目录，通常与 editor.save_dir 相同。
+  input_dir: ./save_scenarios/2b/definitions
+
+  # JSON 内的路线键；当前编辑器固定生成 route_01。
+  route_id: route_01
+
+  # 正式GB/T实验才按每个场景条件展开3次；不影响编辑器生成场景定义。
+  # 当前正式判定固定要求3，不能改成其他数字。
+  repetitions: 3
+
+  # 每个 INVALID 试验允许的自动补测次数；2 表示首次加最多两次补测。
+  max_invalid_retries: 2
+
+  # behavior 与 TCP 两种 ADS 的共同输出根目录。每次启动自动建立
+  # batch_<UTC>/behavior 与 batch_<UTC>/tcp，避免不同批次相互覆盖；其下再按
+  # route/condition/trial/attempt分层。目录中的c_<10位>是完整condition SHA-256的短标签。
+  experiment_root: ./runs/roundabout_formal
+
+  # 固定仿真证据配置（当前不是动态命令行参数）：同步步长0.05s、遥测20Hz，
+  # 可视化视频512x256@20fps/H.264。它不满足物理试验设备的50Hz/1080p要求，
+  # 因此结果明确标记physical_field_test_compliance_claimed=false。
+
+  # 场景筛选阶段：每个定义只运行一次，不形成国标三次通过结论。
+  screening:
+    # Behavior筛选视频和逐场景数据单独保存，避免与正式结果混在一起。
+    output_root: ./runs/roundabout_screening
+
+    # 筛选强调“一定义一次”；INVALID也不自动补测。
+    max_invalid_retries: 0
+
+  # 可选碰撞增强配置。null 表示沿用仓库默认 collision_config.yaml。
+  collision_config: null
+
+ads:
+  behavior:
+    # behavior 是本次流程中的第一种被测方法。当前代码实际调用仓库已有的
+    # scene.EgoRouteFollowScene.follow_route参考控制器，并非CARLA官方BehaviorAgent；
+    # 结果环境快照会明确保存这个实现身份。该实现无需额外模型文件。
+    description: repository EgoRouteFollowScene reference controller
+
+  tcp:
+    # TCP 是本次正式实验中的第二种 ADS。正式运行前必须填写有效 checkpoint。
+    model_path: ""
+
+    # true：没有可用 CUDA 时拒绝开始正式双 ADS 实验；false：允许 TCP 使用 CPU。
+    # 为保证实时性，正式实验建议设置为 true。
+    require_cuda: false

@@ -44,17 +44,25 @@ class TCPRoutePlanner:
         self.mean = np.array([0.0, 0.0])
         self.scale = np.array([111324.60662786, 111319.490945])
         
-    def set_route(self, waypoints_list):
+    def set_route(self, waypoints_list, maneuver=None):
         """
         设置路线
         Args:
             waypoints_list: 包含carla.Waypoint对象的列表
         """
         self.route.clear()
-        for waypoint in waypoints_list:
+        maneuver_commands = {'left': 1, 'right': 2, 'straight': 3}
+        forced_command = maneuver_commands.get(maneuver)
+        for route_item in waypoints_list:
+            if isinstance(route_item, (tuple, list)) and len(route_item) >= 2:
+                waypoint, explicit_command = route_item[0], route_item[1]
+            else:
+                waypoint, explicit_command = route_item, None
             pos = np.array([waypoint.transform.location.x, waypoint.transform.location.y])
             # 使用waypoint的road_option或默认LANEFOLLOW
-            cmd = getattr(waypoint, 'road_option', 4)  # 4 = LANEFOLLOW
+            cmd = (forced_command if forced_command is not None
+                   else explicit_command if explicit_command is not None
+                   else getattr(waypoint, 'road_option', 4))
             self.route.append((pos, cmd))
     
     def run_step(self, vehicle_location):
@@ -329,7 +337,7 @@ class TCPAgent(BasePolicy):
             deterministic: 是否使用确定性策略
             
         Returns:
-            actions: 动作数组 [[throttle, steer], ...]
+            actions: 动作数组 [[throttle, steer, brake], ...]
         """
         if self.net is None:
             self.load_model()
@@ -350,7 +358,7 @@ class TCPAgent(BasePolicy):
         
         # 前几帧返回零动作（等待初始化）
         if self.step_count[0] <= self.config.seq_len:
-            actions.append([0.0, 0.0])
+            actions.append([0.0, 0.0, 0.0])
             return np.array(actions, dtype=np.float32)
         
 
@@ -382,7 +390,7 @@ class TCPAgent(BasePolicy):
             brake_traj = 0.0
         
         # 根据状态融合两种控制输出
-        if self.status_list == 0:
+        if self.status_list[0] == 0:
             # 使用traj为主
             steer = float(np.clip(self.alpha * steer_ctrl + (1 - self.alpha) * steer_traj, -1, 1))
             throttle = float(np.clip(self.alpha * throttle_ctrl + (1 - self.alpha) * throttle_traj, 0, 0.75))
@@ -400,9 +408,8 @@ class TCPAgent(BasePolicy):
         # 更新控制状态
         self._update_status(0, steer)
         
-        # TCP输出的是throttle/steer，但safebench期望的是[throttle, steer]
-        # 注意：如果有强刹车需求，可能需要特殊处理
-        actions.append([throttle, steer])
+        # 保留制动输出；1.d 等停车场景不能丢弃 brake。
+        actions.append([throttle, steer, brake])
             
 
         # print(metadata['speed']*3.6)

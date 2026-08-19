@@ -1,0 +1,15 @@
+# STF 主流程最小 Python 依赖（Python 3.10 / CARLA 0.9.16）
+# CARLA 必须从与 Server 完全匹配的 0.9.16 wheel 单独安装，见 docs/environment_setup.md。
+
+pygame==2.3.0
+numpy==1.26.4
+pandas==1.5.3
+imageio==2.37.2
+imageio-ffmpeg==0.6.0
+PyYAML==6.0.2
+Pillow==12.2.0
+
+# run.py 当前即使选择 behavior 也会加载 TCP 模块，因此两项是主流程必需依赖。
+# 使用 CUDA 时应先按环境文档安装与驱动匹配的 PyTorch wheel。
+torch==1.13.1
+torchvision==0.14.1

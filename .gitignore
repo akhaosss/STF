@@ -1,0 +1,11 @@
+# Generated experiment outputs (videos, ledgers, reports, and prepared runs)
+/runs/
+__pycache__/
+*.py[cod]
+
+# Generated 2.b scenario expansions are reproducible from the editor route,
+# unified YAML configuration, and expansion tool; do not commit all variants.
+/save_scenarios/2b/definitions/
+
+# Local route backups are deliberately outside the active launcher input.
+/save_scenarios/2b/bp/
