@@ -9,7 +9,7 @@
 
 ## 新用户从这里开始
 
-1. 按 [环境安装与验证](docs/environment_setup.md) 创建或检查 `carla0916` 环境。
+1. 按 [环境安装与验证](docs/environment_setup.md) 创建或检查兼容的Python环境；环境名称由使用者自行确定。
 2. 执行环境自检：
 
    ```bash
@@ -64,7 +64,7 @@
 
 ### TCP、Leaderboard 与 ScenarioRunner 上游文档
 
-`TCP/` 是集成进仓库的上游子项目。其文档使用 **CARLA 0.9.10.1/Python 3.7** 基线，只有运行上游训练、Leaderboard或ScenarioRunner时才按其说明单独建环境；不要用它覆盖当前主流程的 `carla0916`。
+`TCP/` 是集成进仓库的上游子项目。其文档使用 **CARLA 0.9.10.1/Python 3.7** 基线，只有运行上游训练、Leaderboard或ScenarioRunner时才按其说明单独建环境；不要用它覆盖当前主流程所需的Python 3.10/CARLA 0.9.16环境。
 
 - TCP模型：[TCP README](TCP/README.md)、[旧环境定义](TCP/environment.yml)；
 - Leaderboard：[README](TCP/leaderboard/README.md)、[依赖清单](TCP/leaderboard/requirements.txt)、[CHANGELOG](TCP/leaderboard/CHANGELOG.md)；

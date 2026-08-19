@@ -12,7 +12,7 @@ save_scenarios/2b/definitions/
 
 ## 1. 前置条件
 
-1. 按[环境安装与验证](../../environment_setup.md)准备CARLA 0.9.16和Python环境。
+1. 按[环境安装与验证](../../environment_setup.md)准备CARLA 0.9.16和Python环境。环境名称由使用者确定；YAML默认不绑定任何开发者机器上的Conda环境名。
 2. 启动CARLA Server并加载`STF-2-b`地图。
 3. 检查[统一配置](../../../config/roundabout_2b.yaml)：
 
@@ -31,8 +31,11 @@ save_scenarios/2b/definitions/
 从仓库根目录执行：
 
 ```bash
+# 先激活你为本项目准备的兼容环境
 ./scripts/run_roundabout_behavior.sh
 ```
+
+`environment.conda_env`留空时，脚本使用当前终端的`python`；如果在本机YAML中填写了环境名，脚本才会使用`conda run -n <环境名>`。
 
 该脚本提供一个端到端运行示例：它读取目录中全部`scenario_2b_*.json`，每个condition运行一次，并保存视频、事件、遥测和判定摘要。这里的`behavior`是仓库已有的`EgoRouteFollowScene.follow_route`参考控制器，不是CARLA官方`BehaviorAgent`，也不代表乙方需要采用的ADS。
 

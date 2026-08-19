@@ -16,16 +16,14 @@ if (($# != 0)); then
     exit 2
 fi
 
-command -v conda >/dev/null 2>&1 || {
-    echo "错误：找不到 conda 命令。" >&2
-    exit 1
-}
-
 CONDA_ENV="$(awk '$1 == "conda_env:" {print $2; exit}' "$CONFIG_PATH" | tr -d "\"'")"
-if [[ -z "$CONDA_ENV" ]]; then
-    echo "错误：无法从 ${CONFIG_PATH} 读取 environment.conda_env。" >&2
-    exit 2
+if [[ -n "$CONDA_ENV" ]]; then
+    command -v conda >/dev/null 2>&1 || {
+        echo "错误：YAML指定了Conda环境 ${CONDA_ENV}，但找不到conda命令。" >&2
+        exit 1
+    }
+    exec conda run --no-capture-output -n "$CONDA_ENV" \
+        python -u "$SCRIPT_DIR/roundabout_launcher.py" editor --config "$CONFIG_PATH"
 fi
 
-exec conda run --no-capture-output -n "$CONDA_ENV" \
-    python -u "$SCRIPT_DIR/roundabout_launcher.py" editor --config "$CONFIG_PATH"
+exec python -u "$SCRIPT_DIR/roundabout_launcher.py" editor --config "$CONFIG_PATH"

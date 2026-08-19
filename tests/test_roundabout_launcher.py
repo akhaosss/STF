@@ -23,7 +23,7 @@ from tests.test_roundabout_2b import valid_config
 class RoundaboutLauncherTest(unittest.TestCase):
     def test_repository_yaml_loads_and_drives_editor_command(self):
         config = load_config()
-        self.assertEqual(config["conda_env"], "carla0916")
+        self.assertEqual(config["conda_env"], "")
         self.assertEqual(config["host"], "127.0.0.1")
         self.assertEqual(config["port"], 2000)
         command = editor_command(config, "SafeBenchHK")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""YAML-driven launcher for the GB/T 41798 2.b editor and two ADS runs."""
+"""YAML-driven launcher for the GB/T 41798 2.b editor and controller examples."""
 
 from __future__ import annotations
 
@@ -225,7 +225,9 @@ def load_config(path=DEFAULT_CONFIG):
     return {
         "config_path": config_path,
         "config_sha256": hashlib.sha256(raw_bytes).hexdigest(),
-        "conda_env": _text(environment.get("conda_env"), "environment.conda_env"),
+        "conda_env": _text(
+            environment.get("conda_env", ""),
+            "environment.conda_env", allow_empty=True),
         "carla_root": _repo_path(
             environment.get("carla_root", ""),
             "environment.carla_root", allow_empty=True),

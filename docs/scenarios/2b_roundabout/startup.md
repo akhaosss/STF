@@ -83,10 +83,11 @@ python3 tools/expand_roundabout_scenarios.py \
 使用CARLA源码/UE4Editor版本时：
 
 ```bash
-conda activate carla0916
 cd <CARLA_ROOT>
 ./CarlaUE4-with-coredump.sh -windowed -benchmark -fps=20 -carla-port=2000
 ```
+
+CARLA Server本身不要求使用仓库作者的Conda环境。随后运行编辑器的终端应激活接入方准备的兼容Python环境；也可以在本机YAML中显式填写该环境名。
 
 CARLA应加载YAML中`connection.expected_map`指定的地图，当前发布数据使用`STF-2-b`。
 
@@ -100,7 +101,7 @@ CARLA应加载YAML中`connection.expected_map`指定的地图，当前发布数�
 
 脚本自动完成：
 
-- 读取 YAML 中的 Conda 环境；
+- 使用当前激活的Python环境，或读取YAML中显式配置的Conda环境名；
 - 补充 CARLA `PythonAPI/carla`；
 - 检查并等待 CARLA Server；
 - 校验当前地图；

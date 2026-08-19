@@ -10,8 +10,10 @@
 schema_version: 1
 
 environment:
-  # 已安装 CARLA 0.9.16 Python API 的 Conda 环境。
-  conda_env: carla0916
+  # 可选Conda环境名称。留空时使用启动脚本所在终端当前激活的Python环境；
+  # 只有希望脚本自动执行 `conda run -n <环境名>` 时才填写。
+  # 这里不得提交开发者机器专用的环境名。
+  conda_env: ""
 
   # 留空时从 Conda 环境的 CARLA_UE4_ROOT/CARLA_0916_ROOT 自动读取。
   # 仅在环境变量未配置时填写本机CARLA根目录，例如：/opt/carla-0.9.16

@@ -6,7 +6,7 @@
 操作系统：Ubuntu 22.04
 Python：3.10
 CARLA Server/Python API：0.9.16，二者必须匹配
-Conda环境名：carla0916
+Conda环境名：由使用者自行确定（下文示例使用stf-carla0916）
 PyTorch/Torchvision：1.13.1 / 0.14.1
 视频编码：FFmpeg + libx264
 ```
@@ -29,11 +29,11 @@ PyTorch/Torchvision：1.13.1 / 0.14.1
 
 ## 2. 创建 Conda 环境
 
-已有 `carla0916` 时可跳到“安装和核对依赖”。新建环境：
+已有满足Python和CARLA版本要求的环境时，可使用原环境并跳到“安装和核对依赖”。以下命令创建一个示例环境；`stf-carla0916`只是示例名称，不是仓库或开发者机器上的固定环境：
 
 ```bash
-conda create -n carla0916 python=3.10 pip -y
-conda activate carla0916
+conda create -n stf-carla0916 python=3.10 pip -y
+conda activate stf-carla0916
 ```
 
 确认没有误用其他Python：
@@ -43,7 +43,16 @@ which python
 python --version
 ```
 
-输出应指向 `.../envs/carla0916/bin/python`，版本应为3.10.x。
+输出应指向刚才激活环境中的Python，版本应为3.10.x。
+
+统一配置中的`environment.conda_env`默认留空，此时启动脚本使用当前终端已激活的Python环境。若希望无需预先激活、由脚本自动选择环境，可在本机把它改成实际环境名，例如：
+
+```yaml
+environment:
+  conda_env: stf-carla0916
+```
+
+该值属于本机运行配置，不应在公共分支中提交个人环境名称。
 
 ## 3. 安装和核对依赖
 
@@ -53,7 +62,7 @@ python --version
 python -m pip install -r environment/requirements.txt
 ```
 
-若需要特定CUDA版本，应先按机器驱动安装对应的PyTorch/Torchvision wheel，再安装requirements；已安装的兼容版本会被保留或按约束核对。当前机器曾验证的组合为Torch 1.13.1 + CUDA 11.7，但GPU是否可用仍取决于主机驱动和运行容器。
+若需要特定CUDA版本，应先按机器驱动安装对应的PyTorch/Torchvision wheel，再安装requirements；已安装的兼容版本会被保留或按约束核对。兼容性参考组合为Torch 1.13.1 + CUDA 11.7，但GPU是否可用仍取决于主机驱动和运行容器。
 
 不建议执行 `pip install -r good_env.txt`：该文件包含ROS、Autoware和整机级依赖，不是项目最小环境。
 
@@ -71,16 +80,16 @@ PythonAPI/carla/agents/navigation/
 安装与Python 3.10匹配的wheel，文件名以实际构建产物为准：
 
 ```bash
-conda activate carla0916
+conda activate stf-carla0916
 python -m pip install /path/to/CARLA/PythonAPI/carla/dist/carla-0.9.16-cp310-cp310-linux_x86_64.whl
 ```
 
 记录CARLA根目录，使本仓库脚本能够自动找到 `agents.navigation`：
 
 ```bash
-conda env config vars set -n carla0916 CARLA_UE4_ROOT=/path/to/CARLA
+conda env config vars set -n stf-carla0916 CARLA_UE4_ROOT=/path/to/CARLA
 conda deactivate
-conda activate carla0916
+conda activate stf-carla0916
 ```
 
 也可以直接在 [环岛统一配置](../config/roundabout_2b.yaml) 的 `environment.carla_root` 中填写绝对路径。
@@ -92,13 +101,13 @@ conda activate carla0916
 推荐在Conda环境安装：
 
 ```bash
-conda install -n carla0916 -c conda-forge ffmpeg -y
+conda install -n stf-carla0916 -c conda-forge ffmpeg -y
 ```
 
 检查H.264编码：
 
 ```bash
-conda run -n carla0916 ffmpeg -version
+conda run -n stf-carla0916 ffmpeg -version
 ```
 
 输出配置应包含 `--enable-libx264`，否则 `run.py` 可能无法生成MP4。
@@ -142,7 +151,7 @@ CARLA Server未启动时，环境检查会把连接标为警告。未配置TCP c
 CARLA源码/UE4Editor构建可使用：
 
 ```bash
-conda activate carla0916
+conda activate stf-carla0916
 cd <CARLA_ROOT>
 ./CarlaUE4-with-coredump.sh -windowed -benchmark -fps=20 -carla-port=2000
 ```
@@ -165,7 +174,7 @@ cd <CARLA_ROOT>
 
 ### `ModuleNotFoundError: carla`
 
-确认当前Python属于 `carla0916`，并重新安装匹配wheel。不要混用系统Python、用户目录中的不同CARLA版本和Conda版本。
+确认当前Python属于你为本项目准备的环境，并重新安装匹配wheel。不要混用系统Python、用户目录中的不同CARLA版本和Conda版本。
 
 ### `ModuleNotFoundError: agents`
 
@@ -184,7 +193,7 @@ cd <CARLA_ROOT>
 执行：
 
 ```bash
-conda run -n carla0916 python -c "import torch; print(torch.cuda.is_available(), torch.version.cuda)"
+python -c "import torch; print(torch.cuda.is_available(), torch.version.cuda)"
 ```
 
 若要求实时GPU实验，应先修复显卡驱动、CUDA和PyTorch wheel，再把YAML中的 `require_cuda` 设为true。
@@ -194,7 +203,7 @@ conda run -n carla0916 python -c "import torch; print(torch.cuda.is_available(),
 这会降低可移植性。可用以下命令确认包位置：
 
 ```bash
-conda run -n carla0916 python -m pip show pygame numpy torch torchvision
+python -m pip show pygame numpy torch torchvision
 ```
 
 新机器应把依赖实际安装到目标Conda环境，不要依赖旧用户目录的包。

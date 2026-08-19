@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check whether the current Conda environment can run the STF main workflow."""
+"""Check whether the current Python environment can run the STF main workflow."""
 
 from __future__ import annotations
 
@@ -57,12 +57,18 @@ def check_python_and_conda(config, report):
             "当前Python为 {}.{}，主流程要求3.10".format(
                 sys.version_info.major, sys.version_info.minor))
     active_env = os.environ.get("CONDA_DEFAULT_ENV", "")
-    if active_env == config["conda_env"]:
+    configured_env = config["conda_env"]
+    if configured_env and active_env == configured_env:
         report.ok("Conda环境 {}".format(active_env))
-    else:
+    elif configured_env:
         report.fail(
             "当前Conda环境为 {!r}，YAML配置为 {!r}".format(
-                active_env, config["conda_env"]))
+                active_env, configured_env))
+    elif active_env:
+        report.ok("使用当前激活的Conda环境 {}（YAML未绑定环境名）".format(
+            active_env))
+    else:
+        report.warn("YAML未绑定Conda环境名；正在检查当前Python解释器")
 
 
 def check_dependencies(report):

@@ -15,7 +15,6 @@ fi
 CONDA_ENV="$(awk '$1 == "conda_env:" {print $2; exit}' "$CONFIG_PATH" | tr -d "\"'")"
 HOST="$(awk '$1 == "host:" {print $2; exit}' "$CONFIG_PATH" | tr -d "\"'")"
 PORT="$(awk '$1 == "port:" {print $2; exit}' "$CONFIG_PATH" | tr -d "\"'")"
-CONDA_ENV="${CONDA_ENV:-carla0916}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-2000}"
 
@@ -25,4 +24,11 @@ if [[ $# -eq 2 ]]; then
 fi
 
 cd "$REPO_ROOT"
-exec conda run --no-capture-output -n "$CONDA_ENV" python -u "${ARGS[@]}"
+if [[ -n "$CONDA_ENV" ]]; then
+    command -v conda >/dev/null 2>&1 || {
+        echo "错误：YAML指定了Conda环境 ${CONDA_ENV}，但找不到conda命令。" >&2
+        exit 1
+    }
+    exec conda run --no-capture-output -n "$CONDA_ENV" python -u "${ARGS[@]}"
+fi
+exec python -u "${ARGS[@]}"

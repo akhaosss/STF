@@ -19,7 +19,7 @@
 
 | YAML路径 | 类型/单位 | 当前值 | 作用 | 参数性质 |
 |---|---|---:|---|---|
-| `environment.conda_env` | 环境名 | `carla0916` | 选择含CARLA 0.9.16 API的Python环境 | 运行环境 |
+| `environment.conda_env` | 环境名或空字符串 | 默认空 | 留空时使用当前激活环境；填写时由脚本执行`conda run -n` | 本机运行环境 |
 | `environment.carla_root` | 路径 | 空 | 自动发现失败时指定CARLA根目录 | 运行环境 |
 | `connection.host/port` | 地址/端口 | `127.0.0.1:2000` | CARLA RPC连接 | 运行环境 |
 | `connection.wait_timeout_s` | s | 60 | 启动器等待Server的上限 | 工程参数 |

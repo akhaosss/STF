@@ -16,23 +16,21 @@ if (($# != 0)); then
     exit 2
 fi
 
-command -v conda >/dev/null 2>&1 || {
-    echo "错误：找不到conda命令。" >&2
-    exit 1
-}
-
 CONDA_ENV="$(awk '$1 == "conda_env:" {print $2; exit}' "$CONFIG_PATH" | tr -d "\"'")"
-if [[ -z "$CONDA_ENV" ]]; then
-    echo "错误：无法从 ${CONFIG_PATH} 读取environment.conda_env。" >&2
-    exit 2
+PYTHON_CMD=(python)
+if [[ -n "$CONDA_ENV" ]]; then
+    command -v conda >/dev/null 2>&1 || {
+        echo "错误：YAML指定了Conda环境 ${CONDA_ENV}，但找不到conda命令。" >&2
+        exit 1
+    }
+    PYTHON_CMD=(conda run --no-capture-output -n "$CONDA_ENV" python)
 fi
 
-if ! conda run -n "$CONDA_ENV" python -c "import yaml" >/dev/null 2>&1; then
-    echo "错误：环境 ${CONDA_ENV} 缺少PyYAML；请先执行：" >&2
-    echo "  conda run -n ${CONDA_ENV} python -m pip install -r ${REPO_ROOT}/environment/requirements.txt" >&2
+if ! "${PYTHON_CMD[@]}" -c "import yaml" >/dev/null 2>&1; then
+    echo "错误：当前Python环境缺少PyYAML；请先执行：" >&2
+    echo "  python -m pip install -r ${REPO_ROOT}/environment/requirements.txt" >&2
     exit 1
 fi
 
-exec conda run --no-capture-output -n "$CONDA_ENV" \
-    env PYTHONDONTWRITEBYTECODE=1 \
-    python "$SCRIPT_DIR/check_environment.py" --config "$CONFIG_PATH"
+export PYTHONDONTWRITEBYTECODE=1
+exec "${PYTHON_CMD[@]}" "$SCRIPT_DIR/check_environment.py" --config "$CONFIG_PATH"
