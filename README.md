@@ -41,7 +41,7 @@ RPC地址、端口、地图名、输入目录和输出目录统一配置在[`con
 ./scripts/run_roundabout_behavior.sh
 ```
 
-该命令中的`behavior`是仓库已有的`EgoRouteFollowScene.follow_route`参考控制器，不是CARLA官方`BehaviorAgent`，也不是指定的正式ADS。它用于确认场景加载、车辆时序、证据记录和结果输出链路可以工作。
+该命令中的`behavior`调用仓库已有的`EgoRouteFollowScene.follow_route`，作为场景加载、车辆时序、证据记录和结果输出链路的参考控制器。
 
 结果默认写入：
 
@@ -59,12 +59,10 @@ runs/roundabout_screening/screening_<UTC时间>/behavior/
 | 查看参数来源、遥测和结果目录 | 阅读[参数、证据与结果目录](docs/scenarios/2b_roundabout/results_and_parameters.md) |
 | 接入乙方自有ADS | 先用参考控制器打通流程，再按[使用其他ADS](docs/scenarios/2b_roundabout/run_existing.md#4-使用其他ads)适配控制接口 |
 
-## 使用边界
+## 数据与执行约定
 
-- 本分支提供仿真场景与证据记录方法，不声称一次仿真等同于物理场地认证。
-- Behavior参考控制器和TCP代码都是可选示例，不要求执行“双ADS正式实验”。
-- 场景筛选可以每个condition运行一次；只有具体测试计划要求时，才展开3次trial并聚合。
-- 修改天气或VT1/VT2车型可离线扩展已有路线；只有路线、车辆位置或拓扑改变时才需要重新编辑。
+- 场景筛选按每个condition运行一次；重复评估按每个condition展开3次trial并聚合。
+- 天气和VT1/VT2车型通过离线工具扩展；路线、车辆位置或拓扑改变时使用编辑器。
 - `runs/`属于本地实验结果，不进入Git；`save_scenarios/2b/definitions/`是交付数据，必须保留在Git中。
 
 ## 仓库主要入口
@@ -72,8 +70,7 @@ runs/roundabout_screening/screening_<UTC时间>/behavior/
 - `waypoints.py`：交互式场景编辑器；
 - `run.py`：场景运行与结果记录；
 - `scripts/`：环境检查及YAML驱动的启动脚本；
-- `roundabout_2b.py`：2.b配置校验、门线、重复试验和结果聚合；
-- `TCP/`：仓库集成的可选上游模型代码，不是本分支的必需运行环节。
+- `roundabout_2b.py`：2.b配置校验、门线、重复试验和结果聚合。
 
 ## 文档地图
 
@@ -86,8 +83,7 @@ runs/roundabout_screening/screening_<UTC时间>/behavior/
 | 3 | [环岛场景定义与对应关系](docs/scenarios/2b_roundabout/README.md) | 国标场景、仓库场景、逐项映射、判定边界 | 当前2.b设计说明 |
 | 4 | [环岛编辑与扩展](docs/scenarios/2b_roundabout/startup.md) | 修改路线、天气和车型 | 需要生成新场景时阅读 |
 | 5 | [环岛参数、证据与结果目录](docs/scenarios/2b_roundabout/results_and_parameters.md) | 参数来源/单位、国标对应、20 Hz遥测和批次目录 | 当前2.b数据字典 |
-| 6 | [机动车信号灯 1.d](docs/scenarios/1d_motor_vehicle_signal/README.md) | 路线矩阵、信号灯时序、运行和结果 | 当前1.d专项说明 |
-| 7 | [通用编辑器与运行器](docs/README.md) | 非专项场景的旧通用流程 | 2.b/1.d用户无需阅读 |
+| 6 | [通用编辑器与运行器](docs/README.md) | 非专项场景的旧通用流程 | 环岛2.b以专项文档为准 |
 
 ### 历史或辅助项目文档
 
@@ -95,9 +91,8 @@ runs/roundabout_screening/screening_<UTC时间>/behavior/
 
 | 文档 | 关系与使用方式 |
 |---|---|
-| [waypoints操作说明.md](docs/waypoints操作说明.md) | 旧版通用快捷键和碰撞增强说明；2.b/1.d 应以专项文档为准 |
+| [waypoints操作说明.md](docs/waypoints操作说明.md) | 旧版通用快捷键和碰撞增强说明；环岛2.b以专项文档为准 |
 | [waypoints.md](waypoints.md) | 更早期的编辑器操作记录，部分按键和输出格式已经变化，仅用于追溯 |
-| [机动车信号灯 ScenarioRunner 实验记录](docs/james.md) | TCP 上游 ScenarioRunner/旧 CARLA 0.9.10.1 实验记录，不等同于当前根目录 `run.py` 的 1.d 流程 |
 | [good_env.txt](good_env.txt) | 某台机器包含 ROS、Autoware、CUDA的完整包快照，不是最小依赖清单 |
 | [version.txt](version.txt) | 碰撞增强功能的历史使用备注，不是项目版本声明 |
 
@@ -124,7 +119,6 @@ runs/roundabout_screening/screening_<UTC时间>/behavior/
    └── docs/environment_setup.md
             │
             ├── 通用场景 ── docs/README.md
-            ├── 1.d信号灯 ─ docs/scenarios/1d_motor_vehicle_signal/README.md
             └── 2.b环岛 ─── docs/scenarios/2b_roundabout/run_existing.md
                               ├── save_scenarios/2b/definitions/
                               ├── docs/scenarios/2b_roundabout/README.md
