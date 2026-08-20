@@ -753,7 +753,7 @@ def main():
     parser.add_argument('--port', type=int, default=2000)
     parser.add_argument('--name', default='TOWN10HD_Opt')
     parser.add_argument('--scenario', type=int, default=1)
-    parser.add_argument('--save_dir', default='output')
+    parser.add_argument('--save_dir', default='./save_scenarios')
     args = parser.parse_args()
     editor = CarlaMapEditor0916(
         host=args.host, port=args.port,

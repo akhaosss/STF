@@ -24,12 +24,12 @@ from torchvision import transforms as T
 from agent.base_policy import BasePolicy
 
 # 添加TCP目录到sys.path以导入TCP模型
-TCP_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'TCP')
+TCP_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'TCP')
 if TCP_ROOT not in sys.path:
     sys.path.insert(0, TCP_ROOT)
 
-from TCP.TCP.model import TCP
-from TCP.TCP.config import GlobalConfig
+from TCP.model import TCP
+from TCP.config import GlobalConfig
 
 
 class TCPRoutePlanner:
