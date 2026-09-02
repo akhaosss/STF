@@ -1,6 +1,6 @@
 # 机动车信号灯场景实验记录
 
-> 历史/上游流程说明：本文使用TCP上游ScenarioRunner与CARLA 0.9.10.1，不是当前根目录 `run.py` 的1.d主流程。新用户请从仓库根目录 [README](../README.md) 选择正确文档。
+> 历史/上游流程说明：本文使用TCP上游ScenarioRunner与CARLA 0.9.10.1，不是当前根目录 `run.py` 的1.d主流程。新用户请从[通用说明](README.md)选择正确文档。
 
 ## 目标
 

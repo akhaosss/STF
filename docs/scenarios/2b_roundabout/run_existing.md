@@ -35,6 +35,25 @@ save_scenarios/2b/definitions/
 ./scripts/run_roundabout_behavior.sh
 ```
 
+上面的脚本最终仍调用根目录`run.py`。需要显式传参或接入其他启动系统时，可以直接执行等价的单次筛选命令：
+
+```bash
+python run.py \
+  --host 127.0.0.1 \
+  --port 2000 \
+  --input_dir ./save_scenarios/2b/definitions \
+  --town STF-2-b \
+  --route_id route_01 \
+  --scenario 2b \
+  --model behavior \
+  --video_dir ./runs/roundabout_direct \
+  --screening \
+  --max_invalid_retries 0 \
+  --headless
+```
+
+`--scenario 2b`选择环岛专项运行流程；`--screening`表示每个场景定义运行一次。该命令会遍历`--input_dir`中的全部`scenario_2b_*.json`，首次联调请先按下一节建立小型运行集。
+
 `environment.conda_env`留空时，脚本使用当前终端的`python`；如果在本机YAML中填写了环境名，脚本才会使用`conda run -n <环境名>`。
 
 Behavior参考控制器始终使用SDL离屏渲染，不创建Pygame窗口，也不会抢占键盘、鼠标或桌面焦点；Visualizer仍在内存Surface上逐帧渲染，因此`visualization.mp4`保持正常生成。`runner.headless: false`只允许其他ADS显示交互窗口，不会为Behavior打开窗口。需要人工记录`O`/`I`键证据时，应使用支持可见模式的ADS运行；无窗口模式下也可由ADS适配层调用对应证据接口。

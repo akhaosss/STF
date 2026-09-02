@@ -2,20 +2,9 @@
 
 本项目包含两个核心工具：**`waypoints.py`**（场景编辑器）和 **`run.py`**（场景运行器），用于在 CARLA 仿真环境中快速设计、生成和运行自动驾驶测试场景。
 
-> 第一次使用请从仓库根目录 [README](../README.md) 开始，并按
-> [环境安装与验证](environment_setup.md) 准备与 CARLA Server 匹配的
-> 0.9.16 Python API。本文件保留通用场景操作；专项定义、配置和判定统一放在
-> `docs/scenarios/<场景编号_名称>/`。**2.b环岛用户不要使用本文件中的Trigger、
-> 普通右键放车、64种天气或直接`run.py`示例**，应从
-> [直接运行已有2.b场景](scenarios/2b_roundabout/run_existing.md)开始。
-
-专项文档入口见 [场景索引](scenarios/README.md)。当前包括：
-
-- [1.d 机动车信号灯](scenarios/1d_motor_vehicle_signal/README.md)
-- [2.b 环形路口](scenarios/2b_roundabout/README.md)
-- [2.b 直接运行已有场景](scenarios/2b_roundabout/run_existing.md)
-- [2.b 启动与编辑步骤](scenarios/2b_roundabout/startup.md)
-- [2.b 结果参数与国标对应](scenarios/2b_roundabout/results_and_parameters.md)
+> 场景专项文档：[2.b 环形路口快速运行](scenarios/2b_roundabout/run_existing.md) ·
+> [2.b 完整说明](scenarios/2b_roundabout/README.md) ·
+> [全部场景索引](scenarios/README.md)
 
 ---
 
@@ -39,16 +28,12 @@
    ```
    默认监听 `127.0.0.1:2000`。
 
-2. 安装并验证依赖：
+2. 安装依赖：
    ```bash
-   python -m pip install -r environment/requirements.txt
-   ./scripts/check_environment.sh
+   pip install carla pygame numpy imageio opencv-python pandas
    ```
 
-   不要直接安装与 Server 版本不匹配的 `carla` 包；0.9.16 wheel 的准备方式见
-   [环境安装与验证](environment_setup.md)。
-
-3. （可选）如果使用TCP模型控制，需要准备对应checkpoint；具体路径由专项配置指定。
+3. （可选）如果使用 TCP 模型控制，需要准备 `tcp/best_model.ckpt`。
 
 ---
 
@@ -291,13 +276,12 @@ videos/
 |---------|-----------------|---------|--------|
 | **1.a** | 限速标志 | - | ![1a](3.png) |
 | **1.b** | 弯道 | - | ![1b](4.png) |
-| **1.d** | 机动车信号灯 | `MotorVehicleTrafficLightScene` | [专项说明](scenarios/1d_motor_vehicle_signal/README.md) |
 
 ### 2. 道路交通基础设施与障碍物识别及响应
 
 | 场景编码 | 测试场景（Excel） | 场景类名 | 示意图 |
 |---------|-----------------|---------|--------|
-| **2.b** | 环形路口 | `EgoRouteFollowScene` + 2.b专项状态机 | [场景定义](scenarios/2b_roundabout/README.md) · [操作说明](scenarios/2b_roundabout/startup.md) · ![2b](scenarios/2b_roundabout/2b_roundabout.png) |
+| **2.b** | 环形路口 | `EgoRouteFollowScene` | ![2b](5.png) |
 | **2.c** | 无信号灯路口左侧存在直行车辆 | `CarCrossScene` | ![2c](6.png) |
 | **2.d** | 无信号灯路口右侧存在直行车辆 | `CarCrossScene` | ![2d](7.png) |
 | **2.e** | 无信号灯路口对向存在直行车辆 | `CarCrossScene` | ![2e](8.png) |
@@ -342,26 +326,25 @@ videos/
 [绘图及运行详细文档](waypoints操作说明.md)
 
 ## 断点重续功能
-
-### 参数
+### 新增参数
 
 `--resume` ：启用断点恢复（默认关闭）
 ### 运行机制
-`保存`：每完成一个场景，运行器立即更新对应场景的持久化结果 ledger。
+`保存`：每完成一个场景，自动将已完成场景集合 + 测试记录写入{scenario}_checkpoint.pkl，同时增量更新 {scenario}_result.pkl。
 
 `恢复`：再次运行加上 --resume 参数，程序会：
-  1. 读取输出目录中已有的结构化结果 ledger
-  2. 提取已经形成有效结果的场景名称
+  1. 检查 {scenario}_checkpoint.pkl 是否存在
+  2. 如果存在，读取已完成的场景名称集合和已有记录
   3. 跳过已完成的场景，从下一个未完成的场景继续运行
-  4. 新完成的场景继续追加到同一结果集合
+  4. 新完成的场景追加到记录中
 
 ###  使用方式
 ```bash
   # 首次运行（正常执行）
-  python run.py --input_dir ./save_scenarios/ --town TOWN10HD_Opt --scenario 3a
+  python tools/run.py --input_dir ./save_scenarios/ --town TOWN10HD_Opt --scenario 3a
 
   # 中断后恢复（跳过已完成的场景）
-  python run.py --input_dir ./save_scenarios/ --town TOWN10HD_Opt --scenario 3a --resume
+  python tools/run.py --input_dir ./save_scenarios/ --town TOWN10HD_Opt --scenario 3a --resume
 
-  结果 ledger 与视频、Markdown、JSON、CSV 和 Pickle 结果保存在同一输出目录。
+  断点文件保存在 videos/{scenario}/{scenario}_checkpoint.pkl，与视频和结果文件在同一目录。
 ```
