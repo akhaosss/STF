@@ -1,0 +1,16 @@
+# Generated experiment outputs (videos, ledgers, reports, and prepared runs)
+/runs/
+__pycache__/
+*.py[cod]
+
+# GB/T 41798 2.b definitions are part of the distributable scenario dataset.
+# Keep them in Git so a fresh clone can run without opening the editor.
+
+# Local route backups are deliberately outside the active launcher input.
+/save_scenarios/2b/bp/
+
+# User-selected subsets for local smoke runs; the published definitions above
+# remain versioned.
+/save_scenarios/2b/runsets/
+# Local model checkpoints
+/tcp/*.ckpt

@@ -1,0 +1,149 @@
+# GB/T 41798—2022 6.2.2 环形路口场景统一配置
+#
+# 使用方式：
+#   1. 直接运行仓库参考控制器：./scripts/run_roundabout_behavior.sh
+#   2. 修改路线时启动编辑器：./scripts/start_roundabout_editor.sh
+#   3. 可选双控制器对比：./scripts/run_roundabout_experiments.sh
+#
+# 所有相对路径均以仓库根目录为基准。修改本文件即可，不需要修改启动命令。
+
+schema_version: 1
+
+environment:
+  # 可选Conda环境名称。留空时使用启动脚本所在终端当前激活的Python环境；
+  # 只有希望脚本自动执行 `conda run -n <环境名>` 时才填写。
+  # 这里不得提交开发者机器专用的环境名。
+  conda_env: ""
+
+  # 留空时从 Conda 环境的 CARLA_UE4_ROOT/CARLA_0916_ROOT 自动读取。
+  # 仅在环境变量未配置时填写本机CARLA根目录，例如：/opt/carla-0.9.16
+  carla_root: ""
+
+connection:
+  # CARLA Server地址与端口。编辑器和运行器共用这组设置。
+  host: 127.0.0.1
+  port: 2000
+
+  # 启动脚本等待 CARLA Server 就绪的最长时间。
+  wait_timeout_s: 60
+
+  # 发布和运行场景时建议填写准确地图名；留空时采用CARLA当前地图。
+  # 可以填写完整名称或最后一段，例如 SafeBenchHK。
+  expected_map: "STF-2-b"
+
+editor:
+  # 编辑器按 S 后生成场景定义的目录。这里不生成“三次重复试验”。
+  save_dir: ./save_scenarios/2b/definitions
+
+  # 场景和可选重复试验的基础随机种子；通常保持不变以保证可复现。
+  seed: 41798
+
+  # 仅当目标地图 OpenDRIVE 无法提供路线限速时填写已确认工程限速，单位 km/h。
+  # 有可审计限速时保持 null，程序优先使用地图限速。
+  speed_limit_kmh: null
+
+  # VT1/VUT交汇采用统一“穿过共同冲突点的先后时间差”，不为每条路线手写延时。
+  # 程序会用VUT起点到入口门线的真实路线长度换算VT1放行位置，并验证VT1先通过。
+  # 这些是仿真实现参数，不是GB/T 41798原始规定值。
+  conflict_sync:
+    # VT1应比VUT提前多少秒穿过同一冲突点。
+    target_headway_s: 1.0
+
+    # 允许不同ADS接近速度带来的时间误差；有效领先窗口为0.5～1.5秒。
+    tolerance_s: 0.5
+
+  # VT1通过出口1判定门线后，继续沿CARLA连接的出口车道行驶该距离再移除。
+  # 这是防止目标车停在出口附近的仿真清场参数，不是国标原始距离。
+  vt1_post_exit_clearance_distance_m: 25.0
+
+  # 天气场景列表。同一条VUT/VT1路线会对下列天气逐一生成场景。
+  # preset: all 表示复用通用生成器的全部15类×8档=120种天气。
+  # 也可改成单个preset（level为1～8），或用parameters直接写CARLA天气参数。
+  # 可用preset：sunny/cloudy/overcast/light_rain/heavy_rain/fog/wind/
+  # sandstorm/night/dusk/dawn/cold_fog/rainy_dusk/snowy_light/snowy_heavy。
+  weather_profiles:
+    - id: all_builtin_weather
+      preset: all
+
+  # 8组目标车型，与120种天气做笛卡尔积；VUT车型不随这里变化。
+  # model必须是目标CARLA版本中存在的vehicle.* blueprint。
+  vehicle_profiles:
+    - id: tesla_model3
+      vt1_model: vehicle.tesla.model3
+      vt2_model: vehicle.tesla.model3
+    - id: audi_tt
+      vt1_model: vehicle.audi.tt
+      vt2_model: vehicle.audi.tt
+    - id: bmw_grandtourer
+      vt1_model: vehicle.bmw.grandtourer
+      vt2_model: vehicle.bmw.grandtourer
+    - id: chevrolet_impala
+      vt1_model: vehicle.chevrolet.impala
+      vt2_model: vehicle.chevrolet.impala
+    - id: ford_mustang
+      vt1_model: vehicle.ford.mustang
+      vt2_model: vehicle.ford.mustang
+    - id: lincoln_mkz_2020
+      vt1_model: vehicle.lincoln.mkz_2020
+      vt2_model: vehicle.lincoln.mkz_2020
+    - id: nissan_patrol
+      vt1_model: vehicle.nissan.patrol
+      vt2_model: vehicle.nissan.patrol
+    - id: toyota_prius
+      vt1_model: vehicle.toyota.prius
+      vt2_model: vehicle.toyota.prius
+
+runner:
+  # 运行器读取的场景目录。仓库发布数据默认就在此目录。
+  input_dir: ./save_scenarios/2b/definitions
+
+  # true：Pygame在内存中离屏渲染，不创建窗口、不抢键盘/鼠标焦点，仍正常写MP4。
+  # behavior参考控制器始终强制离屏；false仅允许其他ADS显示交互窗口。
+  # 此选项只影响run.py，不影响需要可见窗口的waypoints.py编辑器。
+  headless: true
+
+  # JSON 内的路线键；当前编辑器固定生成 route_01。
+  route_id: route_01
+
+  # 采用3次重复测试计划时，每个condition展开3次；单次参考运行不使用此值。
+  repetitions: 3
+
+  # 每个 INVALID 试验允许的自动补测次数；2 表示首次加最多两次补测。
+  max_invalid_retries: 2
+
+  # 可选重复评估的输出根目录。运行双控制器对比脚本时自动建立
+  # batch_<UTC>/behavior 与 batch_<UTC>/tcp；其下再按
+  # route/condition/trial/attempt分层。目录中的c_<10位>是完整condition SHA-256的短标签。
+  experiment_root: ./runs/roundabout_formal
+
+  # 固定仿真证据配置（当前不是动态命令行参数）：同步步长0.05s、遥测20Hz，
+  # 可视化视频512x256@20fps/H.264。它不满足物理试验设备的50Hz/1080p要求，
+  # 因此结果明确标记physical_field_test_compliance_claimed=false。正式视频从VUT
+  # 释放、试验时钟启动时开始，到路线完成、碰撞、总超时或不可继续的夹具/传感器
+  # 错误时结束；车辆生成和VT1预稳定阶段不写入正式视频，也不占用场景总超时。
+
+  # 场景筛选阶段：每个定义只运行一次，不形成国标三次通过结论。
+  screening:
+    # Behavior参考运行的视频和逐场景数据单独保存。
+    output_root: ./runs/roundabout_screening
+
+    # 筛选强调“一定义一次”；INVALID也不自动补测。
+    max_invalid_retries: 0
+
+  # 可选碰撞增强配置。null 表示沿用仓库默认 collision_config.yaml。
+  collision_config: null
+
+ads:
+  behavior:
+    # behavior 是仓库提供的端到端运行示例。当前代码实际调用仓库已有的
+    # scene.EgoRouteFollowScene.follow_route参考控制器，并非CARLA官方BehaviorAgent；
+    # 也不代表接入方必须采用的ADS。该实现无需额外模型文件。
+    description: repository EgoRouteFollowScene reference controller
+
+  tcp:
+    # TCP是可选接入示例。只有实际运行TCP时才需要填写有效checkpoint。
+    model_path: ./tcp/best_model.ckpt
+
+    # true：没有可用CUDA时拒绝启动TCP示例；false：允许TCP使用CPU。
+    # 为保证实时性，使用TCP示例时建议设置为true。
+    require_cuda: false

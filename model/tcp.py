@@ -32,6 +32,17 @@ from TCP.TCP.model import TCP
 from TCP.TCP.config import GlobalConfig
 
 
+# Sensor contract used by the released TCP Leaderboard agent.  Keep these
+# values in one place so scenario adapters do not silently change the image
+# distribution seen by the checkpoint.
+TCP_CAMERA_WIDTH = 900
+TCP_CAMERA_HEIGHT = 256
+TCP_CAMERA_FOV = 100.0
+TCP_CAMERA_X = -1.5
+TCP_CAMERA_Y = 0.0
+TCP_CAMERA_Z = 2.0
+
+
 class TCPRoutePlanner:
     """
     为TCP设计的路线规划器，基于safebench的route信息计算目标点
@@ -44,17 +55,25 @@ class TCPRoutePlanner:
         self.mean = np.array([0.0, 0.0])
         self.scale = np.array([111324.60662786, 111319.490945])
         
-    def set_route(self, waypoints_list):
+    def set_route(self, waypoints_list, maneuver=None):
         """
         设置路线
         Args:
             waypoints_list: 包含carla.Waypoint对象的列表
         """
         self.route.clear()
-        for waypoint in waypoints_list:
+        maneuver_commands = {'left': 1, 'right': 2, 'straight': 3}
+        forced_command = maneuver_commands.get(maneuver)
+        for route_item in waypoints_list:
+            if isinstance(route_item, (tuple, list)) and len(route_item) >= 2:
+                waypoint, explicit_command = route_item[0], route_item[1]
+            else:
+                waypoint, explicit_command = route_item, None
             pos = np.array([waypoint.transform.location.x, waypoint.transform.location.y])
             # 使用waypoint的road_option或默认LANEFOLLOW
-            cmd = getattr(waypoint, 'road_option', 4)  # 4 = LANEFOLLOW
+            cmd = (forced_command if forced_command is not None
+                   else explicit_command if explicit_command is not None
+                   else getattr(waypoint, 'road_option', 4))
             self.route.append((pos, cmd))
     
     def run_step(self, vehicle_location):
@@ -124,6 +143,7 @@ class TCPAgent(BasePolicy):
         self.status_list = [0] * 1  # 0: use traj, 1: use ctrl
         self.alpha = 0.3  # 控制融合权重
         self.step_count = [0] * 1
+        self.last_debug = {}
         
     def set_ego_and_route(self, ego_vehicles, info, static_obs=None):
         """
@@ -329,7 +349,7 @@ class TCPAgent(BasePolicy):
             deterministic: 是否使用确定性策略
             
         Returns:
-            actions: 动作数组 [[throttle, steer], ...]
+            actions: 动作数组 [[throttle, steer, brake], ...]
         """
         if self.net is None:
             self.load_model()
@@ -350,7 +370,14 @@ class TCPAgent(BasePolicy):
         
         # 前几帧返回零动作（等待初始化）
         if self.step_count[0] <= self.config.seq_len:
-            actions.append([0.0, 0.0])
+            self.last_debug = {
+                'warmup': True,
+                'step': int(self.step_count[0]),
+                'final_throttle': 0.0,
+                'final_steer': 0.0,
+                'final_brake': 0.0,
+            }
+            actions.append([0.0, 0.0, 0.0])
             return np.array(actions, dtype=np.float32)
         
 
@@ -366,7 +393,7 @@ class TCPAgent(BasePolicy):
         pred = self.net(rgb, state, target_point)
         
         # 使用process_action获取ctrl输出
-        steer_ctrl, throttle_ctrl, brake_ctrl, _ = self.net.process_action(
+        steer_ctrl, throttle_ctrl, brake_ctrl, ctrl_metadata = self.net.process_action(
             pred, cmd_value, speed_tensor, target_point
         )
         
@@ -382,7 +409,7 @@ class TCPAgent(BasePolicy):
             brake_traj = 0.0
         
         # 根据状态融合两种控制输出
-        if self.status_list == 0:
+        if self.status_list[0] == 0:
             # 使用traj为主
             steer = float(np.clip(self.alpha * steer_ctrl + (1 - self.alpha) * steer_traj, -1, 1))
             throttle = float(np.clip(self.alpha * throttle_ctrl + (1 - self.alpha) * throttle_traj, 0, 0.75))
@@ -399,10 +426,40 @@ class TCPAgent(BasePolicy):
         
         # 更新控制状态
         self._update_status(0, steer)
-        
-        # TCP输出的是throttle/steer，但safebench期望的是[throttle, steer]
-        # 注意：如果有强刹车需求，可能需要特殊处理
-        actions.append([throttle, steer])
+
+        # Persist one JSON-safe diagnostic snapshot.  The roundabout runtime
+        # copies it into telemetry.csv.gz, allowing a stopped vehicle to be
+        # attributed to the learned control branch, trajectory branch, or the
+        # final blend without changing the requested control.
+        predicted_waypoints = pred['pred_wp'][0].detach().cpu().numpy()
+        self.last_debug = {
+            'warmup': False,
+            'step': int(self.step_count[0]),
+            'command_index': int(cmd_value),
+            'target_point': [float(value) for value in target_point[0].detach().cpu()],
+            'predicted_waypoints': [
+                [float(value) for value in point]
+                for point in predicted_waypoints
+            ],
+            'desired_speed_mps': float(metadata.get('desired_speed', 0.0)),
+            'ctrl_throttle': float(throttle_ctrl),
+            'ctrl_steer': float(steer_ctrl),
+            'ctrl_brake': float(brake_ctrl),
+            'traj_throttle': float(throttle_traj),
+            'traj_steer': float(steer_traj),
+            'traj_brake': float(brake_traj),
+            'final_throttle': float(throttle),
+            'final_steer': float(steer),
+            'final_brake': float(brake),
+            'blend_status': int(self.status_list[0]),
+            'ctrl_acceleration_source': (
+                'brake' if float(ctrl_metadata.get('brake', 0.0)) > 0.0
+                else 'throttle'
+            ),
+        }
+
+        # 保留制动输出；1.d 等停车场景不能丢弃 brake。
+        actions.append([throttle, steer, brake])
             
 
         # print(metadata['speed']*3.6)

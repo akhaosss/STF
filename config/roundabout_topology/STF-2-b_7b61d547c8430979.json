@@ -1,0 +1,382 @@
+{
+  "arms": [
+    {
+      "arm_id": "arm_01",
+      "inbound": {
+        "gate": {
+          "approach_yaw": 34.3221,
+          "center": {
+            "x": 31.2487,
+            "y": -21.046,
+            "z": 0.2
+          },
+          "forward": {
+            "x": 0.825881,
+            "y": 0.563844,
+            "z": 0.0
+          },
+          "lane_id": -1,
+          "left": {
+            "x": 29.6043,
+            "y": -18.6373,
+            "z": 0.2
+          },
+          "right": {
+            "x": 32.8932,
+            "y": -23.4547,
+            "z": 0.2
+          },
+          "road_id": 179,
+          "s": 2.0,
+          "section_id": 0,
+          "source": "operator_topology_inbound_seed",
+          "width_m": 5.833
+        },
+        "lane": {
+          "lane_id": -1,
+          "road_id": 179,
+          "section_id": 0
+        }
+      },
+      "outbound": {
+        "gate": {
+          "approach_yaw": -90.5314,
+          "center": {
+            "x": 20.0408,
+            "y": -11.5365,
+            "z": 0.2
+          },
+          "forward": {
+            "x": -0.009275,
+            "y": -0.999957,
+            "z": 0.0
+          },
+          "lane_id": -1,
+          "left": {
+            "x": 22.9938,
+            "y": -11.5639,
+            "z": 0.2
+          },
+          "right": {
+            "x": 17.0877,
+            "y": -11.5092,
+            "z": 0.2
+          },
+          "road_id": 228,
+          "s": 28.0,
+          "section_id": 0,
+          "source": "operator_topology_outbound_seed",
+          "width_m": 5.9063
+        },
+        "lane": {
+          "lane_id": -1,
+          "road_id": 228,
+          "section_id": 0
+        }
+      }
+    },
+    {
+      "arm_id": "arm_02",
+      "inbound": {
+        "gate": {
+          "approach_yaw": -257.5761,
+          "center": {
+            "x": 72.4673,
+            "y": -4.7811,
+            "z": 0.2
+          },
+          "forward": {
+            "x": -0.215143,
+            "y": 0.976583,
+            "z": 0.0
+          },
+          "lane_id": -1,
+          "left": {
+            "x": 70.7155,
+            "y": -5.1671,
+            "z": 0.2
+          },
+          "right": {
+            "x": 74.2191,
+            "y": -4.3952,
+            "z": 0.2
+          },
+          "road_id": 136,
+          "s": 4.0,
+          "section_id": 0,
+          "source": "operator_topology_inbound_seed",
+          "width_m": 3.5876
+        },
+        "lane": {
+          "lane_id": -1,
+          "road_id": 136,
+          "section_id": 0
+        }
+      },
+      "outbound": {
+        "gate": {
+          "approach_yaw": -19.9226,
+          "center": {
+            "x": 61.2042,
+            "y": -15.8017,
+            "z": 0.2
+          },
+          "forward": {
+            "x": 0.940154,
+            "y": -0.34075,
+            "z": 0.0
+          },
+          "lane_id": -1,
+          "left": {
+            "x": 61.8895,
+            "y": -13.9109,
+            "z": 0.2
+          },
+          "right": {
+            "x": 60.5189,
+            "y": -17.6925,
+            "z": 0.2
+          },
+          "road_id": 162,
+          "s": 34.0,
+          "section_id": 0,
+          "source": "operator_topology_outbound_seed",
+          "width_m": 4.0223
+        },
+        "lane": {
+          "lane_id": -1,
+          "road_id": 162,
+          "section_id": 0
+        }
+      }
+    },
+    {
+      "arm_id": "arm_03",
+      "inbound": {
+        "gate": {
+          "approach_yaw": -166.0711,
+          "center": {
+            "x": 66.8719,
+            "y": 48.7087,
+            "z": 0.2
+          },
+          "forward": {
+            "x": -0.970595,
+            "y": -0.240718,
+            "z": 0.0
+          },
+          "lane_id": -1,
+          "left": {
+            "x": 67.4282,
+            "y": 46.4654,
+            "z": 0.2
+          },
+          "right": {
+            "x": 66.3155,
+            "y": 50.952,
+            "z": 0.2
+          },
+          "road_id": 98,
+          "s": 4.0,
+          "section_id": 0,
+          "source": "operator_topology_inbound_seed",
+          "width_m": 4.6225
+        },
+        "lane": {
+          "lane_id": -1,
+          "road_id": 98,
+          "section_id": 0
+        }
+      },
+      "outbound": {
+        "gate": {
+          "approach_yaw": -305.8092,
+          "center": {
+            "x": 81.409,
+            "y": 27.4602,
+            "z": 0.2
+          },
+          "forward": {
+            "x": 0.585088,
+            "y": 0.81097,
+            "z": 0.0
+          },
+          "lane_id": -1,
+          "left": {
+            "x": 78.474,
+            "y": 29.5777,
+            "z": 0.2
+          },
+          "right": {
+            "x": 84.344,
+            "y": 25.3427,
+            "z": 0.2
+          },
+          "road_id": 142,
+          "s": 34.0,
+          "section_id": 0,
+          "source": "operator_topology_outbound_seed",
+          "width_m": 7.2382
+        },
+        "lane": {
+          "lane_id": -1,
+          "road_id": 142,
+          "section_id": 0
+        }
+      }
+    },
+    {
+      "arm_id": "arm_04",
+      "inbound": {
+        "gate": {
+          "approach_yaw": -92.1382,
+          "center": {
+            "x": 27.4094,
+            "y": 50.1665,
+            "z": 0.2
+          },
+          "forward": {
+            "x": -0.03731,
+            "y": -0.999304,
+            "z": 0.0
+          },
+          "lane_id": -1,
+          "left": {
+            "x": 29.7969,
+            "y": 50.0774,
+            "z": 0.2
+          },
+          "right": {
+            "x": 25.0218,
+            "y": 50.2556,
+            "z": 0.2
+          },
+          "road_id": 230,
+          "s": 2.0,
+          "section_id": 0,
+          "source": "operator_topology_inbound_seed",
+          "width_m": 4.7785
+        },
+        "lane": {
+          "lane_id": -1,
+          "road_id": 230,
+          "section_id": 0
+        }
+      },
+      "outbound": {
+        "gate": {
+          "approach_yaw": -230.2633,
+          "center": {
+            "x": 41.9258,
+            "y": 55.8857,
+            "z": 0.2
+          },
+          "forward": {
+            "x": -0.639261,
+            "y": 0.76899,
+            "z": 0.0
+          },
+          "lane_id": -1,
+          "left": {
+            "x": 39.9026,
+            "y": 54.2039,
+            "z": 0.2
+          },
+          "right": {
+            "x": 43.9489,
+            "y": 57.5675,
+            "z": 0.2
+          },
+          "road_id": 100,
+          "s": 36.0,
+          "section_id": 0,
+          "source": "operator_topology_outbound_seed",
+          "width_m": 5.2618
+        },
+        "lane": {
+          "lane_id": -1,
+          "road_id": 100,
+          "section_id": 0
+        }
+      }
+    },
+    {
+      "arm_id": "arm_05",
+      "inbound": {
+        "gate": {
+          "approach_yaw": -14.5727,
+          "center": {
+            "x": 6.0403,
+            "y": 8.6846,
+            "z": 0.2
+          },
+          "forward": {
+            "x": 0.967829,
+            "y": -0.251608,
+            "z": 0.0
+          },
+          "lane_id": -1,
+          "left": {
+            "x": 6.5014,
+            "y": 10.458,
+            "z": 0.2
+          },
+          "right": {
+            "x": 5.5793,
+            "y": 6.9111,
+            "z": 0.2
+          },
+          "road_id": 207,
+          "s": 2.0,
+          "section_id": 0,
+          "source": "operator_topology_inbound_seed",
+          "width_m": 3.6648
+        },
+        "lane": {
+          "lane_id": -1,
+          "road_id": 207,
+          "section_id": 0
+        }
+      },
+      "outbound": {
+        "gate": {
+          "approach_yaw": -152.5109,
+          "center": {
+            "x": 5.7159,
+            "y": 20.8643,
+            "z": 0.2
+          },
+          "forward": {
+            "x": -0.887099,
+            "y": -0.46158,
+            "z": 0.0
+          },
+          "lane_id": -1,
+          "left": {
+            "x": 6.7307,
+            "y": 18.9139,
+            "z": 0.2
+          },
+          "right": {
+            "x": 4.701,
+            "y": 22.8147,
+            "z": 0.2
+          },
+          "road_id": 254,
+          "s": 40.0,
+          "section_id": 0,
+          "source": "operator_topology_outbound_seed",
+          "width_m": 4.3973
+        },
+        "lane": {
+          "lane_id": -1,
+          "road_id": 254,
+          "section_id": 0
+        }
+      }
+    }
+  ],
+  "map_name": "STF-2-b/Maps/STF-2-b/STF-2-b",
+  "opendrive_sha256": "7b61d547c843097923e792c3eda482b78237de136a703d93b7aa9843065101af",
+  "schema_version": 1
+}
