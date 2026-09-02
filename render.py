@@ -258,8 +258,6 @@ class MapImage(object):
 
 
 class BirdeyeRender(object):
-    _map_image_cache = {}
-
     def __init__(self, world, params, logger):
         self.params = params
         self.server_fps = 0.0
@@ -276,11 +274,7 @@ class BirdeyeRender(object):
         self.walker_polygons = []
         self.waypoints = None
         self.red_light = False
-        map_key = (self.town_map.name, self.params['pixels_per_meter'])
-        self.map_image = self._map_image_cache.get(map_key)
-        if self.map_image is None:
-            self.map_image = MapImage(world, self.town_map, self.params['pixels_per_meter'], logger)
-            self._map_image_cache[map_key] = self.map_image
+        self.map_image = MapImage(world, self.town_map, self.params['pixels_per_meter'], logger)
         self.original_surface_size = min(self.params['screen_size'][0], self.params['screen_size'][1])
         self.surface_size = self.map_image.big_map_surface.get_width()
         self.actors_surface = pygame.Surface((self.map_image.surface.get_width(), self.map_image.surface.get_height()))
@@ -293,16 +287,7 @@ class BirdeyeRender(object):
         self.result_surface = pygame.Surface((self.surface_size, self.surface_size)).convert()
         self.result_surface.set_colorkey(COLOR_BLACK)
         weak_self = weakref.ref(self)
-        self._on_tick_id = self.world.on_tick(
-            lambda timestamp: BirdeyeRender.on_world_tick(weak_self, timestamp))
-
-    def destroy(self):
-        if self._on_tick_id is not None:
-            try:
-                self.world.remove_on_tick(self._on_tick_id)
-            except RuntimeError:
-                pass
-            self._on_tick_id = None
+        self.world.on_tick(lambda timestamp: BirdeyeRender.on_world_tick(weak_self, timestamp))
 
     def set_hero(self, hero_actor, hero_id):
         self.hero_actor = hero_actor
@@ -509,4 +494,3 @@ class Visualizer:
     def destroy(self):
         self.camera.stop()
         self.camera.destroy()
-        self.birdeye_render.destroy()
