@@ -3,6 +3,7 @@ import json
 import pygame
 import argparse
 import os
+import atexit
 import imageio
 import numpy as np
 import pickle
@@ -31,6 +32,12 @@ def get_sorted_scenario_files(input_dir):
             files.append(f)
     files.sort()
     return [os.path.join(input_dir, f) for f in files]
+
+def save_results(records, result_path):
+    temp_path = f"{result_path}.tmp"
+    with open(temp_path, "wb") as f:
+        pickle.dump(pd.DataFrame(records), f)
+    os.replace(temp_path, result_path)
 
 # ======================
 # ✅ 新增：从JSON加载天气并设置CARLA
@@ -248,6 +255,7 @@ def main():
     # ======================
     test_records = []
     completed_scenarios = set()
+    atexit.register(save_results, test_records, RESULT_PKL)
 
     if args.resume and os.path.exists(CHECKPOINT_PKL):
         try:
@@ -284,7 +292,9 @@ def main():
 
         video_path = os.path.join(VIDEO_DIR, f"{scenario_name}.mp4")
         writer = imageio.get_writer(video_path, fps=FPS, codec='libx264')
-        if args.scenario == '3a':
+        if args.scenario == '1b':
+            scene = EgoRouteFollowScene(client, world, cfg_path, args.town, args.route_id, args.model, args.model_path, start_from_ego=True)
+        elif args.scenario == '3a':
             scene = PedestrianCrossScene(client, world, cfg_path, args.town, args.route_id, args.model, args.model_path)
         elif args.scenario == '2b':
             scene = EgoRouteFollowScene(client, world, cfg_path, args.town, args.route_id, args.model, args.model_path)
@@ -437,6 +447,7 @@ def main():
         }
         test_records.append(record)
         completed_scenarios.add(scenario_name)
+        save_results(test_records, RESULT_PKL)
         print(f"✅ {scenario_name} | collision: {running_status}")
 
         # ======================
@@ -446,10 +457,6 @@ def main():
             try:
                 with open(CHECKPOINT_PKL, "wb") as f:
                     pickle.dump({"completed": completed_scenarios, "records": test_records}, f)
-                # 同时更新结果 pkl，方便中断后也能看到部分结果
-                df_inc = pd.DataFrame(test_records)
-                with open(RESULT_PKL, "wb") as f:
-                    pickle.dump(df_inc, f)
             except Exception as e:
                 print(f"⚠️ 保存断点失败: {e}")
 
@@ -468,9 +475,8 @@ def main():
         world.tick()
         pygame.time.wait(1000)
 
+    save_results(test_records, RESULT_PKL)
     df = pd.DataFrame(test_records)
-    with open(RESULT_PKL, "wb") as f:
-        pickle.dump(df, f)
 
     print(f"\n🎉 ALL DONE! Result saved to: {RESULT_PKL}")
     print("\nPreview:")
