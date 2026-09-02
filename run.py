@@ -182,13 +182,57 @@ def _vector_json(vector):
 def _actor_runtime_snapshot(actor):
     if actor is None:
         return None
-    transform = actor.get_transform()
-    bbox = getattr(actor, "bounding_box", None)
-    extent = getattr(bbox, "extent", None)
+
+    # CARLA actor proxies remain as Python objects after their simulator actor
+    # has been destroyed.  Identity fields may still be cached, but RPC-backed
+    # calls such as get_transform() raise RuntimeError.  A target fixture that
+    # has completed its post-exit clearance is intentionally destroyed before
+    # the terminal record is assembled, so represent that lifecycle state
+    # instead of turning an otherwise valid attempt into a runner INVALID.
+    try:
+        alive = bool(actor.is_alive)
+    except (AttributeError, RuntimeError):
+        alive = False
+    try:
+        actor_id = getattr(actor, "id", None)
+    except RuntimeError:
+        actor_id = None
+    try:
+        type_id = getattr(actor, "type_id", None)
+    except RuntimeError:
+        type_id = None
+    try:
+        attributes = dict(getattr(actor, "attributes", {}) or {})
+    except (RuntimeError, TypeError, ValueError):
+        attributes = {}
+    if not alive:
+        return {
+            "actor_id": actor_id,
+            "type_id": type_id,
+            "attributes": attributes,
+            "alive": False,
+            "transform": None,
+            "bounding_box_extent_m": None,
+        }
+
+    try:
+        transform = actor.get_transform()
+        bbox = getattr(actor, "bounding_box", None)
+        extent = getattr(bbox, "extent", None)
+    except (AttributeError, RuntimeError):
+        return {
+            "actor_id": actor_id,
+            "type_id": type_id,
+            "attributes": attributes,
+            "alive": False,
+            "transform": None,
+            "bounding_box_extent_m": None,
+        }
     return {
-        "actor_id": getattr(actor, "id", None),
-        "type_id": getattr(actor, "type_id", None),
-        "attributes": dict(getattr(actor, "attributes", {}) or {}),
+        "actor_id": actor_id,
+        "type_id": type_id,
+        "attributes": attributes,
+        "alive": True,
         "transform": {
             "location": _vector_json(transform.location),
             "rotation": {
@@ -555,6 +599,9 @@ def _run_roundabout_attempt(
     max_ego_speed = 0.0
     start_frame = None
     terminal_frame = None
+    video_start_sim_time = None
+    video_end_sim_time = None
+    recorded_video_frames = 0
 
     ego_velocity = 0.0
     ego_acc_x = ego_acc_y = ego_acc_z = 0.0
@@ -686,6 +733,16 @@ def _run_roundabout_attempt(
             "video_metadata": {
                 "start_frame": start_frame,
                 "end_frame": terminal_frame,
+                "start_sim_time": round(video_start_sim_time, 4)
+                if video_start_sim_time is not None else None,
+                "end_sim_time": round(video_end_sim_time, 4)
+                if video_end_sim_time is not None else None,
+                "duration_s": round(
+                    max(0.0, video_end_sim_time - video_start_sim_time), 4)
+                if (video_start_sim_time is not None
+                    and video_end_sim_time is not None) else None,
+                "frame_count": int(recorded_video_frames),
+                "recording_scope": "roundabout_trial_clock",
             },
         }
         record.update(output_identity)
@@ -701,9 +758,6 @@ def _run_roundabout_attempt(
         npc_actors = spawn_traffic_npcs(
             world, client, npc_total, npc_car_ratio, npc_cyclist_ratio)
         spawn_complete = True
-        start_frame = int(world.get_snapshot().frame)
-
-        writer = imageio.get_writer(video_path, fps=FPS, codec='libx264')
 
         def on_collision(event):
             nonlocal collision_occurred, last_evidence_callback_time
@@ -847,32 +901,50 @@ def _run_roundabout_attempt(
 
             keep_running = scene.tick()
 
+            snapshot = world.get_snapshot()
             trans = scene.ego.get_transform()
             vel = scene.ego.get_velocity()
             acc = scene.ego.get_acceleration()
-            if previous_location is not None:
-                dx = trans.location.x - previous_location.x
-                dy = trans.location.y - previous_location.y
-                total_distance += float(np.sqrt(dx ** 2 + dy ** 2))
-            previous_location = trans.location
-
             ego_velocity = float(np.sqrt(vel.x ** 2 + vel.y ** 2))
-            speed_sum += ego_velocity
-            speed_sample_count += 1
-            max_ego_speed = max(max_ego_speed, ego_velocity)
             ego_acc_x, ego_acc_y, ego_acc_z = acc.x, acc.y, acc.z
             ego_x, ego_y, ego_z = (
                 trans.location.x, trans.location.y, trans.location.z)
             ego_roll, ego_pitch, ego_yaw = (
                 trans.rotation.roll, trans.rotation.pitch, trans.rotation.yaw)
 
+            trial_started = getattr(
+                scene, "rb_trial_start_sim_time", None) is not None
+            if trial_started:
+                if previous_location is not None:
+                    dx = trans.location.x - previous_location.x
+                    dy = trans.location.y - previous_location.y
+                    total_distance += float(np.sqrt(dx ** 2 + dy ** 2))
+                previous_location = trans.location
+                speed_sum += ego_velocity
+                speed_sample_count += 1
+                max_ego_speed = max(max_ego_speed, ego_velocity)
+
             waypoints = scene.get_future_waypoints(12)
             viz.render(waypoints)
-            frame = pygame.surfarray.array3d(viz.screen).swapaxes(0, 1)
-            writer.append_data(frame)
+            if trial_started:
+                if writer is None:
+                    start_frame = int(snapshot.frame)
+                    video_start_sim_time = float(
+                        snapshot.timestamp.elapsed_seconds)
+                    writer = imageio.get_writer(
+                        video_path, fps=FPS, codec='libx264')
+                    print(
+                        "[2.b] 试验时钟已启动；开始记录正式实验视频：{}".format(
+                            video_path))
+                frame = pygame.surfarray.array3d(viz.screen).swapaxes(0, 1)
+                writer.append_data(frame)
+                recorded_video_frames += 1
+                terminal_frame = int(snapshot.frame)
+                video_end_sim_time = float(snapshot.timestamp.elapsed_seconds)
             running = bool(keep_running)
 
-        terminal_frame = int(world.get_snapshot().frame)
+        if terminal_frame is None:
+            terminal_frame = int(world.get_snapshot().frame)
         barrier_ok = stop_sensor_listening(
             drain=True, terminal_frame=terminal_frame)
         record = base_record()
@@ -1009,9 +1081,18 @@ def main():
                         help='Cyclist ratio; the remainder are pedestrians')
     parser.add_argument('--resume', action='store_true', default=False,
                         help='Skip scenarios that already have durable results')
+    parser.add_argument(
+        '--headless', action='store_true',
+        help=('Render Pygame off-screen without creating or focusing a visible '
+              'window; video recording remains enabled'))
 
     args = parser.parse_args()
     args.scenario = args.scenario.lower().replace('.', '')
+    # The repository Behavior controller is a non-interactive screening
+    # baseline.  Always keep its Pygame visualizer off-screen, including when
+    # run.py is invoked directly without the launcher-provided flag.
+    if args.model == "behavior":
+        args.headless = True
     if args.max_invalid_retries < 0:
         parser.error('--max_invalid_retries must be zero or greater')
     if args.npc_total < 0:
@@ -1021,6 +1102,13 @@ def main():
         parser.error('NPC ratios must be non-negative and sum to at most 1.0')
     if args.model == 'tcp' and not os.path.isfile(args.model_path):
         raise FileNotFoundError("TCP model checkpoint not found: {}".format(args.model_path))
+
+    # SDL selects its video backend when pygame is initialized.  The dummy
+    # backend still provides the display Surface consumed by Visualizer and
+    # imageio, but it never creates a desktop window or captures input focus.
+    if args.headless:
+        os.environ["SDL_VIDEODRIVER"] = "dummy"
+        os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
     # ======================
     # Load collision enhancement config
@@ -1078,6 +1166,12 @@ def main():
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
 
     pygame.init()
+    if args.headless:
+        print(
+            "[VIDEO] Off-screen Pygame rendering enabled "
+            "(driver={}); MP4 recording remains active".format(
+                pygame.display.get_driver()),
+            flush=True)
     client = carla.Client(args.host, args.port)
     client.set_timeout(12.0)
     world = client.get_world()
@@ -1103,6 +1197,9 @@ def main():
                     args.scenario, actual_town, args.town))
 
     runtime_environment = _runtime_environment(client, world, args)
+    runtime_environment["pygame_window_mode"] = (
+        "headless" if args.headless else "visible")
+    runtime_environment["pygame_video_driver"] = pygame.display.get_driver()
     runtime_environment["ads"] = {
         "name": args.model,
         "implementation": (
@@ -1142,6 +1239,7 @@ def main():
         "evidence_profile": "stf_carla_simulation",
         "telemetry_frequency_hz": 20,
         "video_purpose": "simulation_visualization",
+        "pygame_window_mode": "headless" if args.headless else "visible",
         "runtime_environment": runtime_environment,
     }
 

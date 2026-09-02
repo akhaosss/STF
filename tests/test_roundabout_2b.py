@@ -744,6 +744,11 @@ class Roundabout2BHelpersTest(unittest.TestCase):
                     "trial_time": index * 0.05,
                     "phase": "APPROACHING",
                     "vut": {"speed_mps": speed},
+                    "tcp_debug": {
+                        "desired_speed_mps": 3.5,
+                        "ctrl_brake": 0.2,
+                        "target_point": [0.0, -5.0],
+                    },
                 }],
             })
         with tempfile.TemporaryDirectory() as directory:
@@ -759,7 +764,11 @@ class Roundabout2BHelpersTest(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(attempt, "summary.json")))
             telemetry_path = os.path.join(attempt, "telemetry.csv.gz")
             with gzip.open(telemetry_path, "rt", encoding="utf-8") as stream:
-                self.assertIn("vut_speed_mps", stream.readline())
+                header = stream.readline()
+                self.assertIn("vut_speed_mps", header)
+                self.assertIn("tcp_desired_speed_mps", header)
+                self.assertIn("tcp_ctrl_brake", header)
+                self.assertIn("tcp_target_point", header)
             with open(os.path.join(condition, "aggregate.json"),
                       "r", encoding="utf-8") as stream:
                 aggregate = json.load(stream)

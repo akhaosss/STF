@@ -1051,6 +1051,7 @@ def roundabout_config_errors(config, require_reproducibility=True):
             "vt1_conflict_max_offset_m",
             "vt1_speed_continuity_duration_s",
             "vt1_exit_observation_timeout_s",
+            "vt1_post_exit_clearance_distance_m",
             "speed_limit_unobservable_duration_s",
             "stop_duration_s",
             "emergency_brake_deceleration_mps2",
@@ -1684,6 +1685,13 @@ def _flatten_telemetry_sample(sample):
         row["route_{}".format(key)] = value
     row["ads_active"] = sample.get("ads_active")
     row["ads_control_source"] = sample.get("ads_control_source")
+    tcp_debug = sample.get("tcp_debug") or {}
+    for key, value in tcp_debug.items():
+        if isinstance(value, (dict, list, tuple)):
+            value = json.dumps(
+                value, ensure_ascii=False, sort_keys=True,
+                separators=(",", ":"))
+        row["tcp_{}".format(key)] = value
     return row
 
 
@@ -1849,10 +1857,13 @@ def write_roundabout_result_artifacts(
         "condition_id", "condition_fingerprint", "matrix_id", "trial_index",
         "attempt_index", "execution_mode",
         "planned_exit",
-        "trial_valid", "vt1_speed_at_entry_kmh", "vt1_upstream_at_entry",
+        "trial_valid", "entry_sync_missed", "approach_time_budget_exceeded",
+        "vt1_speed_at_entry_kmh", "vt1_upstream_at_entry",
         "vt1_upstream_remaining_at_entry_m", "vt1_conflict_ttc_at_entry_s",
         "vt1_conflict_gap_target_m", "vt1_conflict_gap_window_m",
-        "vt1_speed_maintained", "vt1_exit1_crossed", "vt2_stationary",
+        "vt1_speed_maintained", "vt1_exit1_crossed", "vt1_departed",
+        "vt1_exit_clearance_target_m", "vt1_exit_clearance_travel_m",
+        "vt2_stationary",
         "correct_exit_crossed", "correct_exit_lane",
         "collision", "collision_vt1", "collision_vt2",
         "infrastructure_collision", "other_collision",

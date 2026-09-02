@@ -34,8 +34,12 @@ class RoundaboutLauncherTest(unittest.TestCase):
         self.assertIn("--roundabout_variants_json", command)
         self.assertEqual(config["conflict_headway_s"], 1.0)
         self.assertEqual(config["conflict_tolerance_s"], 0.5)
+        self.assertEqual(config["vt1_post_exit_clearance_distance_m"], 25.0)
+        self.assertTrue(config["headless"])
         self.assertIn("--roundabout_conflict_headway_s", command)
         self.assertIn("--roundabout_conflict_tolerance_s", command)
+        self.assertIn(
+            "--roundabout_vt1_post_exit_clearance_distance_m", command)
         self.assertEqual(len(config["roundabout_variants"]["weather"]), 120)
         self.assertEqual(len(config["roundabout_variants"]["vehicles"]), 8)
 
@@ -82,6 +86,16 @@ class RoundaboutLauncherTest(unittest.TestCase):
         self.assertIn("--model_path", tcp)
         self.assertIn("--host", behavior)
         self.assertIn("--port", behavior)
+        self.assertIn("--headless", behavior)
+        self.assertIn("--headless", tcp)
+
+    def test_behavior_remains_headless_when_visible_mode_is_requested(self):
+        config = copy.copy(load_config())
+        config["headless"] = False
+        behavior = run_command(config, "SafeBenchHK", "behavior")
+        tcp = run_command(config, "SafeBenchHK", "tcp")
+        self.assertIn("--headless", behavior)
+        self.assertNotIn("--headless", tcp)
 
     def test_behavior_screening_runs_definitions_once_in_separate_output(self):
         config = load_config()

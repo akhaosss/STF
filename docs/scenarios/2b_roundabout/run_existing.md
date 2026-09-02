@@ -37,6 +37,8 @@ save_scenarios/2b/definitions/
 
 `environment.conda_env`留空时，脚本使用当前终端的`python`；如果在本机YAML中填写了环境名，脚本才会使用`conda run -n <环境名>`。
 
+Behavior参考控制器始终使用SDL离屏渲染，不创建Pygame窗口，也不会抢占键盘、鼠标或桌面焦点；Visualizer仍在内存Surface上逐帧渲染，因此`visualization.mp4`保持正常生成。`runner.headless: false`只允许其他ADS显示交互窗口，不会为Behavior打开窗口。需要人工记录`O`/`I`键证据时，应使用支持可见模式的ADS运行；无窗口模式下也可由ADS适配层调用对应证据接口。
+
 该脚本提供一个端到端运行示例：它读取目录中全部`scenario_2b_*.json`，每个condition运行一次，并保存视频、事件、遥测和判定摘要。这里的`behavior`是仓库已有的`EgoRouteFollowScene.follow_route`参考控制器，不是CARLA官方`BehaviorAgent`，也不代表乙方需要采用的ADS。
 
 示例输出位于：
@@ -93,5 +95,6 @@ JSON中的天气和VT1/VT2车型已经固定。运行前修改YAML的`editor.wea
 - `场景JSON不包含当前地图`：CARLA加载的地图与JSON地图键不一致。
 - `场景JSON不包含路线键 route_01`：YAML的`runner.route_id`与JSON不一致。
 - `地图不一致`：确认CARLA当前地图和`connection.expected_map`均为`STF-2-b`。
+- 没有出现Pygame窗口：默认的`runner.headless: true`就是离屏运行，并非启动失败；检查终端进度和输出目录中的视频。需要窗口时将其改为`false`。
 
 运行器在启动时校验每个场景；不需要先运行编辑器来完成这些检查。

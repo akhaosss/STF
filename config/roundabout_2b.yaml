@@ -52,6 +52,10 @@ editor:
     # 允许不同ADS接近速度带来的时间误差；有效领先窗口为0.5～1.5秒。
     tolerance_s: 0.5
 
+  # VT1通过出口1判定门线后，继续沿CARLA连接的出口车道行驶该距离再移除。
+  # 这是防止目标车停在出口附近的仿真清场参数，不是国标原始距离。
+  vt1_post_exit_clearance_distance_m: 25.0
+
   # 天气场景列表。同一条VUT/VT1路线会对下列天气逐一生成场景。
   # preset: all 表示复用通用生成器的全部15类×8档=120种天气。
   # 也可改成单个preset（level为1～8），或用parameters直接写CARLA天气参数。
@@ -93,6 +97,11 @@ runner:
   # 运行器读取的场景目录。仓库发布数据默认就在此目录。
   input_dir: ./save_scenarios/2b/definitions
 
+  # true：Pygame在内存中离屏渲染，不创建窗口、不抢键盘/鼠标焦点，仍正常写MP4。
+  # behavior参考控制器始终强制离屏；false仅允许其他ADS显示交互窗口。
+  # 此选项只影响run.py，不影响需要可见窗口的waypoints.py编辑器。
+  headless: true
+
   # JSON 内的路线键；当前编辑器固定生成 route_01。
   route_id: route_01
 
@@ -109,7 +118,9 @@ runner:
 
   # 固定仿真证据配置（当前不是动态命令行参数）：同步步长0.05s、遥测20Hz，
   # 可视化视频512x256@20fps/H.264。它不满足物理试验设备的50Hz/1080p要求，
-  # 因此结果明确标记physical_field_test_compliance_claimed=false。
+  # 因此结果明确标记physical_field_test_compliance_claimed=false。正式视频从VUT
+  # 释放、试验时钟启动时开始，到路线完成、碰撞、总超时或不可继续的夹具/传感器
+  # 错误时结束；车辆生成和VT1预稳定阶段不写入正式视频，也不占用场景总超时。
 
   # 场景筛选阶段：每个定义只运行一次，不形成国标三次通过结论。
   screening:
@@ -131,7 +142,7 @@ ads:
 
   tcp:
     # TCP是可选接入示例。只有实际运行TCP时才需要填写有效checkpoint。
-    model_path: ""
+    model_path: ./tcp/best_model.ckpt
 
     # true：没有可用CUDA时拒绝启动TCP示例；false：允许TCP使用CPU。
     # 为保证实时性，使用TCP示例时建议设置为true。

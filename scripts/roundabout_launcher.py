@@ -245,6 +245,9 @@ def load_config(path=DEFAULT_CONFIG):
         "roundabout_variants": _roundabout_variants(editor),
         "conflict_headway_s": conflict_headway_s,
         "conflict_tolerance_s": conflict_tolerance_s,
+        "vt1_post_exit_clearance_distance_m": _optional_positive_number(
+            editor.get("vt1_post_exit_clearance_distance_m", 25.0),
+            "editor.vt1_post_exit_clearance_distance_m"),
         "input_dir": _repo_path(runner.get("input_dir"), "runner.input_dir"),
         "route_id": _text(runner.get("route_id"), "runner.route_id"),
         "max_invalid_retries": _integer(
@@ -260,6 +263,8 @@ def load_config(path=DEFAULT_CONFIG):
         "screening_max_invalid_retries": _integer(
             screening.get("max_invalid_retries", 0),
             "runner.screening.max_invalid_retries", 0),
+        "headless": _bool(
+            runner.get("headless", True), "runner.headless"),
         "collision_config": collision_path,
         "behavior_description": _text(
             behavior.get("description"), "ads.behavior.description"),
@@ -365,6 +370,8 @@ def editor_command(config, map_name):
         json.dumps(config["roundabout_variants"], ensure_ascii=False),
         "--roundabout_conflict_headway_s", str(config["conflict_headway_s"]),
         "--roundabout_conflict_tolerance_s", str(config["conflict_tolerance_s"]),
+        "--roundabout_vt1_post_exit_clearance_distance_m",
+        str(config["vt1_post_exit_clearance_distance_m"]),
     ]
     if config["speed_limit_kmh"] is not None:
         command.extend([
@@ -403,6 +410,12 @@ def run_command(
         ])
     if screening:
         command.append("--screening")
+    # Behavior is an unattended reference/screening controller and must never
+    # create a desktop Pygame window.  Keep the explicit flag in the generated
+    # command as well as the run.py fallback so manifests and shell logs show
+    # the effective mode.
+    if config["headless"] or model == "behavior":
+        command.append("--headless")
     if config["collision_config"] is not None:
         command.extend([
             "--collision_config", str(config["collision_config"]),

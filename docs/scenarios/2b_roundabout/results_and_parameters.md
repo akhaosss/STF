@@ -32,6 +32,7 @@
 | `editor.weather_profiles` | 列表 | 全部内置天气 | 同一路线自动展开天气 | 场景条件 |
 | `editor.vehicle_profiles` | 列表 | 8组 | 只展开VT1/VT2车型，VUT不随之变化 | 场景条件 |
 | `runner.input_dir` | 路径 | definitions目录 | 运行器读取范围 | 数据管理 |
+| `runner.headless` | bool | true | Pygame离屏渲染；Behavior始终强制离屏，其他ADS可配置可见模式 | 运行环境 |
 | `runner.repetitions` | 次 | 3 | 可选重复评估的trial数量 | 国标重复要求的实现参数；单次示例不使用 |
 | `runner.max_invalid_retries` | 次 | 2 | 重复评估时每个trial最多补测次数 | 工程参数 |
 | `runner.experiment_root` | 路径 | `runs/roundabout_formal` | 可选重复评估批次根目录 | 数据管理 |
@@ -41,6 +42,12 @@
 | `ads.tcp.require_cuda` | bool | false | 运行TCP示例时是否强制CUDA | 运行环境 |
 
 天气与车型做笛卡尔积：当前`120种天气 × 8组车型 = 每条route生成960个condition`。这不会重新绘制路线。
+
+### TCP传感器与控制契约
+
+根目录`run.py`的TCP示例必须与上游`TCP/leaderboard/team_code/tcp_agent.py`保持同一视觉输入：RGB `900×256`、FOV `100°`，相机位置为车辆坐标`x=-1.5 m, y=0 m, z=2 m`。这些值统一定义在`model/tcp.py`；2.b运行时直接使用该定义，不先采集`800×600`再拉伸。
+
+TCP模型和PID参数仍来自`TCP/TCP/config.py`。`ads.tcp.model_path`只指定checkpoint，不覆盖模型训练或PID参数。
 
 ## 3. JSON中的标准参数与工程参数
 
@@ -71,6 +78,7 @@
 | `vut_approach_time_budget_s` | s | 路线计算，运行上限15 | VUT到入口的统一时序预算 |
 | `vt1_conflict_headway_target_s/tolerance_s` | s | YAML 1.0/0.5 | 自动放行线与有效领先窗口 |
 | `vt1_release_remaining_m` | m | 自动算 | VT1到放行位置剩余路线长度 |
+| `vt1_post_exit_clearance_distance_m` | m | YAML 25 | VT1穿过出口1门线后沿连接出口车道继续行驶的清场距离；达到后移除VT1 |
 | `vt2_initial_upstream_distance_m` | m | 2 | VT2在下游入口门线上游的默认布置距离 |
 | `vt2_stationary_speed_threshold_mps` | m/s | 0.1 | 判定VT2仍静止 |
 | `stop_speed_threshold_mps` / `stop_duration_s` | m/s、s | 0.1、1.0 | 入环后停车判定 |
@@ -79,8 +87,8 @@
 | `speed_limit_tolerance_kmh` | km/h | 0.5 | 限速数值容差 |
 | `speed_limit_unobservable_duration_s` | s | 0.5 | 连续缺失限速证据后判INVALID |
 | `route_completion_distance_m` | m | 3 | 路线完成位置容差 |
-| `exit_completion_distance_m` | m | 2 | 出口下游及车道检查距离 |
-| `indicator_lookback_s` | s | 3 | 驶出门线前转向灯证据窗口 |
+| `exit_completion_distance_m` | m | 2 | 出口下游车道诊断距离；当前OpenDRIVE分段边界会导致road_id瞬时不一致，因此不参与PASS/FAIL判定 |
+| `indicator_lookback_s` | s | 3 | 驶出门线前可选转向灯诊断窗口；不参与PASS/FAIL判定 |
 | `incapable_observation_s` | s | 10 | 不具备能力分支的入口前观察窗 |
 | `scenario_timeout_s` | s | 120 | 单次尝试总超时 |
 | `timeline_sample_interval_s` | s | 0.05 | 20 Hz CARLA真值遥测 |
@@ -88,12 +96,33 @@
 
 每个condition的`condition.json`会保存完整场景快照，所以最终实际值应以该文件为准，不应只依赖本表默认值。
 
+VT1手工路线负责定义其从入口上游、经过冲突区并穿过出口1门线的法定场景路径。
+若手工路线在出口后不足上述清场距离，运行时只在出口1门线已经确认后使用CARLA
+车道拓扑继续沿出口道路行驶；该自动尾段不改变出口编号或测试路线判定。达到清场距离后
+记录`VT1_CLEARED_EXIT_AND_REMOVED`事件并移除VT1，避免目标车停在出口附近成为额外障碍物。
+
 ## 4. 仿真证据配置
 
 本项目使用`evidence_profile=stf_carla_simulation`：
 
 - 固定同步步长0.05 s，逐帧遥测20 Hz；按用户决策不提升到物理设备条款中的50 Hz。
-- 视频为512×256、20 fps、H.264可视化证据；按用户决策不要求1080p。
+- 视频为512×256、20 fps、H.264可视化证据；按用户决策不要求1080p。录像与
+  `trial_time`对齐：从VUT释放、试验时钟开始时打开，到路线完成、碰撞、总超时
+  或不可继续的夹具/传感器错误时关闭。车辆生成和VT1预稳定阶段既不进入视频，
+  也不占用`scenario_timeout_s`。
+- `runner.headless=true`时，Pygame使用SDL离屏Surface，不创建桌面窗口，也不接收
+  人工键盘证据；视频内容与可见窗口模式来自同一Visualizer渲染结果。需要按
+  `O`记录人工ODD提示证据时应设为`false`，或由ADS适配层提供对应事件。`I`键
+  记录的驶出右转灯仅作为可选诊断证据，不参与PASS/FAIL判定。
+- 出口车道的OpenDRIVE `road_id/section_id/lane_id`继续写入诊断字段，但当前审核门线
+  位于道路126与142的分段边界，精确`road_id`比较不参与PASS/FAIL判定。真实车道偏离
+  应由门线、路线走廊和横向偏移证据共同复核。
+- ADS释放后的VUT/VT1同步偏差会写入时间线事件，并通过
+  `entry_sync_missed=true`保留为诊断证据，但不再作为INVALID或FAIL理由。
+  只要ADS后续安全通过冲突区并满足其他通过要求，该次仍可判为PASS。
+  若VUT超过`vut_approach_time_budget_s`仍未到达入口，则作为有效试验的
+  `vut_entry_arrival_timeout` FAIL；若继续停车直到场景总超时，同时保留
+  `timeout`、`roundabout_entry_not_reached`和`route_incomplete`等失败证据。
 - 运动学来源为CARLA ground truth，不是外部GNSS/IMU测量。
 - 仿真无物理座舱和座舱音频，记录`not_applicable`及原因。
 - 因上述差异，结果明确记录`physical_field_test_compliance_claimed=false`，不能仅凭仿真结果宣称完成物理场地认证。
@@ -104,6 +133,7 @@
 - 车体纵向/横向速度与加速度；
 - 请求控制和CARLA实际控制（油门、方向、制动、手刹、倒车、档位）；
 - ADS是否已激活和控制来源；
+- TCP运行时记录导航目标、预测路点、期望速度，以及`ctrl`、`traj`和最终融合的油门/方向/制动（`tcp_*`列）；
 - road/section/lane、路线进度、完成比例和横向偏移；
 - VUT到VT1/VT2的平面质心距离，以及按两车相对速度在视线方向投影得到的TTC；
 - 灯光原始位掩码及可读状态。
@@ -147,7 +177,7 @@ runs/roundabout_formal/
 | `summary.json` | 一次attempt的轻量判定和量化摘要 |
 | `telemetry.csv.gz` | 20 Hz完整时序数据 |
 | `events.json` | 状态迁移、门线、碰撞、压线及夹具事件 |
-| `visualization.mp4` | 仿真可视化视频 |
+| `visualization.mp4` | 与`trial_time`同步启停的仿真可视化视频 |
 | `artifact_manifest.json` | 文件相对路径、字节数和SHA-256 |
 | `aggregate.json` | 同一控制器、同一condition的3次判定与均值/标准差/最小/最大 |
 

@@ -17,7 +17,8 @@ PyTorch/Torchvision：1.13.1 / 0.14.1
 
 最低准备内容：
 
-- 64位 Linux 和可打开 Pygame/CARLA窗口的图形会话；
+- 64位 Linux；路线编辑器需要可打开Pygame窗口的图形会话，场景运行器默认可用
+  SDL离屏渲染而不显示Pygame窗口；CARLA Server是否需要图形会话取决于其启动方式；
 - Conda；
 - CARLA 0.9.16 Server或当前机器的0.9.16源码构建；
 - 与Python 3.10匹配的CARLA 0.9.16 wheel；

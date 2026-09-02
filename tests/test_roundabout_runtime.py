@@ -39,6 +39,12 @@ def _load_scene_with_carla_stub():
     tcp = types.ModuleType("model.tcp")
     tcp.TCPAgent = type("TCPAgent", (), {})
     tcp.TCPRoutePlanner = type("TCPRoutePlanner", (), {})
+    tcp.TCP_CAMERA_WIDTH = 900
+    tcp.TCP_CAMERA_HEIGHT = 256
+    tcp.TCP_CAMERA_FOV = 100.0
+    tcp.TCP_CAMERA_X = -1.5
+    tcp.TCP_CAMERA_Y = 0.0
+    tcp.TCP_CAMERA_Z = 2.0
 
     collision = types.ModuleType("collision_enhancer")
     collision.load_collision_config = lambda *args, **kwargs: {}
@@ -117,6 +123,99 @@ class RoundaboutRuntimeContractTest(unittest.TestCase):
         self.assertAlmostEqual(actor.target.y, 4.0)
         self.assertEqual(actor.target.z, 0.0)
 
+    def test_vt1_route_end_continues_on_connected_lane_after_exit(self):
+        class Actor:
+            def __init__(self):
+                self.is_alive = True
+                self.control = None
+
+            def get_location(self):
+                return _Location(10.0, 0.0)
+
+            def get_transform(self):
+                return types.SimpleNamespace(
+                    rotation=types.SimpleNamespace(yaw=0.0),
+                    get_forward_vector=lambda: _Location(1.0, 0.0, 0.0))
+
+            def get_velocity(self):
+                return _Location(15.0 / 3.6, 0.0, 0.0)
+
+            def apply_control(self, control):
+                self.control = control
+
+        continuation = types.SimpleNamespace(
+            transform=types.SimpleNamespace(location=_Location(16.0, 0.0)))
+        lane = types.SimpleNamespace(next=lambda distance: [continuation])
+        scene = SCENE_MODULE.EgoRouteFollowScene.__new__(
+            SCENE_MODULE.EgoRouteFollowScene)
+        scene.vt1_actor = Actor()
+        scene.map = types.SimpleNamespace(get_waypoint=lambda *args, **kwargs: lane)
+        scene.vt1_route = [_Location(0.0, 0.0), _Location(10.0, 0.0)]
+        scene.vt1_target_idx = 1
+        scene.rb_vt1_route_lookahead = 2.0
+        scene.rb_vt1_exit1_crossed = True
+        scene.rb_vt1_drawn_route_finished = False
+        scene.rb_vt1_topology_fallback_reported = False
+        scene.rb_vt1_speed_integral = 0.0
+        scene.vt1_target_speed_mps = 15.0 / 3.6
+        scene.rb_vt1_speed_control_mode = "pid"
+        scene.rb_vt1_corner_speed_compensation = 0.12
+
+        scene._roundabout_follow_vt1()
+
+        self.assertTrue(scene.rb_vt1_drawn_route_finished)
+        self.assertIsNotNone(scene.vt1_actor.control)
+        self.assertEqual(scene.vt1_actor.control.brake, 0.0)
+        self.assertGreater(scene.vt1_actor.control.throttle, 0.0)
+
+    def test_vt1_is_removed_only_after_post_exit_clearance(self):
+        class Actor:
+            def __init__(self):
+                self.is_alive = True
+                self.disabled = False
+                self.destroyed = False
+
+            def get_location(self):
+                return _Location(2.0, 0.0)
+
+            def disable_constant_velocity(self):
+                self.disabled = True
+
+            def destroy(self):
+                self.destroyed = True
+                self.is_alive = False
+
+        actor = Actor()
+        events = []
+        scene = SCENE_MODULE.EgoRouteFollowScene.__new__(
+            SCENE_MODULE.EgoRouteFollowScene)
+        scene.vt1_actor = actor
+        scene.rb_vt1_departed = False
+        scene.rb_vt1_exit1_crossed = True
+        scene.rb_vt1_conflict_crossed = True
+        scene.rb_vt1_exit_clearance_last_location = _Location(0.0, 0.0)
+        scene.rb_vt1_exit_clearance_travel_m = 4.0
+        scene.rb_vt1_post_exit_clearance_distance = 5.0
+        scene.vt1_target_speed_mps = 15.0 / 3.6
+        scene.rb_vt1_constant_velocity_enabled = True
+        scene.vt1_route_finished = False
+        scene.rb_vt1_departure_time = None
+        scene.roundabout_exit_gates = {}
+        scene._roundabout_vt1_upstream_remaining = lambda: -1.0
+        scene._roundabout_record_event = (
+            lambda *args, **kwargs: events.append((args, kwargs)))
+
+        scene._roundabout_update_vt1_fixture(12.0, 0.05)
+
+        self.assertTrue(scene.rb_vt1_departed)
+        self.assertTrue(scene.vt1_route_finished)
+        self.assertTrue(actor.disabled)
+        self.assertTrue(actor.destroyed)
+        self.assertIsNone(scene.vt1_actor)
+        self.assertEqual(events[-1][0][1], "VT1_CLEARED_EXIT_AND_REMOVED")
+        self.assertGreaterEqual(
+            events[-1][1]["clearance_distance_m"], 5.0)
+
     def test_roundabout_vehicle_speed_ignores_spawn_settling_velocity(self):
         actor = types.SimpleNamespace(get_velocity=lambda: types.SimpleNamespace(
             x=0.0, y=0.0, z=-1.96))
@@ -160,7 +259,7 @@ class RoundaboutRuntimeContractTest(unittest.TestCase):
         self.assertLess(detail["distance_m"], allowed)
         self.assertEqual(scene.rb_vut_route_segment_idx, 1)
 
-    def test_vut_entry_rejects_fixture_gap_outside_global_time_window(self):
+    def test_vut_entry_records_gap_miss_without_truncating_experiment(self):
         scene = SCENE_MODULE.EgoRouteFollowScene.__new__(
             SCENE_MODULE.EgoRouteFollowScene)
         scene.rb_entry_arrived = False
@@ -176,16 +275,69 @@ class RoundaboutRuntimeContractTest(unittest.TestCase):
         scene.rb_vt1_entry_gap_min_m = 4.0
         scene.rb_vt1_entry_gap_max_m = 16.0
         scene.rb_vt1_entry_gap_target_m = 10.0
+        scene.rb_entry_sync_missed = False
         scene._roundabout_vt1_is_upstream = lambda: (True, 20.0)
         events = []
-        invalid = []
+        terminal_invalid = []
+        deferred_invalid = []
         scene._roundabout_record_event = (
             lambda *args, **kwargs: events.append((args, kwargs)))
-        scene._roundabout_invalidate = lambda now, reason: invalid.append(reason)
+        scene._roundabout_invalidate = (
+            lambda now, reason: terminal_invalid.append(reason))
+        scene._roundabout_defer_invalid = (
+            lambda now, reason: deferred_invalid.append(reason))
 
-        self.assertFalse(scene._roundabout_capture_entry_conditions(12.0))
-        self.assertEqual(invalid, ["vt1_conflict_gap_out_of_window"])
+        self.assertTrue(scene._roundabout_capture_entry_conditions(12.0))
+        self.assertEqual(terminal_invalid, [])
+        self.assertEqual(deferred_invalid, [])
+        self.assertTrue(scene.rb_entry_sync_missed)
         self.assertEqual(events[-1][0][1], "VT1_CONFLICT_GAP_OUT_OF_WINDOW")
+
+    def test_vut_entry_after_vt1_departure_is_diagnostic_without_runner_error(self):
+        scene = SCENE_MODULE.EgoRouteFollowScene.__new__(
+            SCENE_MODULE.EgoRouteFollowScene)
+        scene.rb_entry_arrived = False
+        scene.rb_entry_arrival_time = None
+        scene.roundabout_capable = True
+        scene.vt1_actor = None
+        scene.vt2_actor = types.SimpleNamespace(
+            get_velocity=lambda: types.SimpleNamespace(x=0.0, y=0.0))
+        scene.rb_vt1_departed = True
+        scene.vt1_route_finished = True
+        scene.rb_vt1_speed_at_entry = None
+        scene.rb_vt1_upstream_at_entry = None
+        scene.rb_vt1_remaining_at_entry = None
+        scene.rb_vt1_conflict_ttc_at_entry_s = None
+        scene.rb_entry_sync_missed = False
+        scene.rb_invalid_reasons = []
+        scene.rb_vt2_stationary_speed = 0.1
+        events = []
+        terminal_invalid = []
+        deferred_invalid = []
+        scene._roundabout_record_event = (
+            lambda *args, **kwargs: events.append((args, kwargs)))
+        scene._roundabout_invalidate = (
+            lambda now, reason: terminal_invalid.append(reason))
+        scene._roundabout_defer_invalid = (
+            lambda now, reason: deferred_invalid.append(reason))
+
+        self.assertTrue(scene._roundabout_capture_entry_conditions(12.0))
+        self.assertEqual(terminal_invalid, [])
+        self.assertEqual(deferred_invalid, [])
+        self.assertTrue(scene.rb_entry_sync_missed)
+        self.assertIsNone(scene.rb_vt1_speed_at_entry)
+        self.assertEqual(events[-1][0][1], "VT1_UNAVAILABLE_AT_VUT_ENTRY")
+        self.assertEqual(
+            events[-1][1]["reason"], "vt1_passed_entry_before_vut_entry")
+
+    def test_experiment_clock_excludes_fixture_stabilisation(self):
+        scene = SCENE_MODULE.EgoRouteFollowScene.__new__(
+            SCENE_MODULE.EgoRouteFollowScene)
+        scene.rb_start_sim_time = 100.0
+        scene.rb_trial_start_sim_time = 107.35
+
+        self.assertAlmostEqual(
+            scene._roundabout_experiment_elapsed(227.35), 120.0)
 
     def test_result_fails_when_vut_enters_before_vt1_crosses_merge_point(self):
         scene = self._result_scene()
@@ -213,6 +365,8 @@ class RoundaboutRuntimeContractTest(unittest.TestCase):
             "rb_speed_limit_unobservable_gap": False,
             "rb_invalid_reasons": [],
             "rb_invalid_events": [],
+            "rb_entry_sync_missed": False,
+            "rb_approach_time_budget_exceeded": False,
             "rb_valid_collision_time": None,
             "rb_timed_out": False,
             "rb_vt2_moved": False,
@@ -241,6 +395,11 @@ class RoundaboutRuntimeContractTest(unittest.TestCase):
             "rb_vt1_upstream_at_entry": True,
             "rb_vt1_remaining_at_entry": 3.0,
             "rb_vt1_speed_maintained": True,
+            "rb_vt1_post_exit_clearance_distance": 25.0,
+            "rb_vt1_exit_clearance_travel_m": 0.0,
+            "rb_vt1_departed": False,
+            "rb_vt1_departure_time": None,
+            "rb_vt1_drawn_route_finished": False,
             "rb_vt2_max_speed": 0.0,
             "rb_max_speed_mps": 5.0,
             "rb_observed_speed_limit_kmh": 30.0,
@@ -266,11 +425,102 @@ class RoundaboutRuntimeContractTest(unittest.TestCase):
             setattr(scene, name, value)
         return scene
 
+    def test_entry_sync_miss_does_not_prevent_an_otherwise_passing_result(self):
+        scene = self._result_scene()
+        scene.rb_vt1_exit1_crossed = True
+        scene.rb_entry_sync_missed = True
+
+        result = scene.get_result()
+
+        self.assertTrue(result["trial_valid"])
+        self.assertTrue(result["pass"])
+        self.assertTrue(result["entry_sync_missed"])
+        self.assertEqual(result["failure_reasons"], [])
+
+    def test_missing_exit_indicator_is_diagnostic_not_failure(self):
+        scene = self._result_scene()
+        scene.rb_vt1_exit1_crossed = True
+        scene.rb_exit_indicator_observed = False
+        scene.rb_indicator_evidence_source = None
+
+        result = scene.get_result()
+
+        self.assertTrue(result["trial_valid"])
+        self.assertTrue(result["pass"])
+        self.assertFalse(result["exit_indicator_observed"])
+        self.assertIsNone(result["turn_signal_violation"])
+        self.assertFalse(result["indicator_policy"]["evaluated_as_failure"])
+        self.assertNotIn("exit_indicator_not_observed", result["failure_reasons"])
+
+    def test_exit_lane_mismatch_is_diagnostic_not_failure(self):
+        scene = self._result_scene()
+        scene.rb_vt1_exit1_crossed = True
+        scene.rb_exit_lane_correct = False
+
+        result = scene.get_result()
+
+        self.assertTrue(result["trial_valid"])
+        self.assertTrue(result["pass"])
+        self.assertFalse(result["correct_exit_lane"])
+        self.assertFalse(result["exit_lane_evaluated_as_failure"])
+        self.assertNotIn("incorrect_exit_lane", result["failure_reasons"])
+
+    def test_vut_entry_arrival_timeout_is_a_valid_failure(self):
+        scene = self._result_scene()
+        scene.rb_vt1_exit1_crossed = True
+        scene.rb_approach_time_budget_exceeded = True
+
+        result = scene.get_result()
+
+        self.assertTrue(result["trial_valid"])
+        self.assertFalse(result["pass"])
+        self.assertTrue(result["approach_time_budget_exceeded"])
+        self.assertIn("vut_entry_arrival_timeout", result["failure_reasons"])
+
     def test_carla_bgra_camera_is_converted_to_rgb(self):
         image = types.SimpleNamespace(
             raw_data=bytes([10, 20, 30, 255]), height=1, width=1)
         rgb = SCENE_MODULE.EgoRouteFollowScene._roundabout_decode_camera_rgb(image)
         np.testing.assert_array_equal(rgb, np.array([[[30, 20, 10]]], dtype=np.uint8))
+
+    def test_roundabout_tcp_camera_matches_upstream_sensor_contract(self):
+        attributes = {}
+
+        class Blueprint:
+            def set_attribute(self, key, value):
+                attributes[key] = value
+
+        class Sensor:
+            def listen(self, callback):
+                self.callback = callback
+
+        sensor = Sensor()
+        world = types.SimpleNamespace(
+            get_blueprint_library=lambda: types.SimpleNamespace(
+                find=lambda identifier: Blueprint()),
+            spawn_actor=lambda blueprint, transform, attach_to=None: sensor,
+        )
+        scene = SCENE_MODULE.EgoRouteFollowScene.__new__(
+            SCENE_MODULE.EgoRouteFollowScene)
+        scene.world = world
+        scene.ego = object()
+        scene.actors = []
+        scene.camera_condition = threading.Condition()
+        locations = []
+        original_transform = SCENE_MODULE.carla.Transform
+        SCENE_MODULE.carla.Transform = lambda location: locations.append(location) or location
+        try:
+            scene.spawn_camera()
+        finally:
+            SCENE_MODULE.carla.Transform = original_transform
+
+        self.assertEqual(attributes["image_size_x"], "900")
+        self.assertEqual(attributes["image_size_y"], "256")
+        self.assertEqual(attributes["fov"], "100.0")
+        self.assertEqual(locations[0].x, -1.5)
+        self.assertEqual(locations[0].y, 0.0)
+        self.assertEqual(locations[0].z, 2.0)
+        self.assertIs(scene.camera_sensor, sensor)
 
     def test_tcp_camera_requires_the_current_world_frame(self):
         scene = SCENE_MODULE.EgoRouteFollowScene.__new__(

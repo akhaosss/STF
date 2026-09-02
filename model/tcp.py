@@ -32,6 +32,17 @@ from TCP.TCP.model import TCP
 from TCP.TCP.config import GlobalConfig
 
 
+# Sensor contract used by the released TCP Leaderboard agent.  Keep these
+# values in one place so scenario adapters do not silently change the image
+# distribution seen by the checkpoint.
+TCP_CAMERA_WIDTH = 900
+TCP_CAMERA_HEIGHT = 256
+TCP_CAMERA_FOV = 100.0
+TCP_CAMERA_X = -1.5
+TCP_CAMERA_Y = 0.0
+TCP_CAMERA_Z = 2.0
+
+
 class TCPRoutePlanner:
     """
     为TCP设计的路线规划器，基于safebench的route信息计算目标点
@@ -132,6 +143,7 @@ class TCPAgent(BasePolicy):
         self.status_list = [0] * 1  # 0: use traj, 1: use ctrl
         self.alpha = 0.3  # 控制融合权重
         self.step_count = [0] * 1
+        self.last_debug = {}
         
     def set_ego_and_route(self, ego_vehicles, info, static_obs=None):
         """
@@ -358,6 +370,13 @@ class TCPAgent(BasePolicy):
         
         # 前几帧返回零动作（等待初始化）
         if self.step_count[0] <= self.config.seq_len:
+            self.last_debug = {
+                'warmup': True,
+                'step': int(self.step_count[0]),
+                'final_throttle': 0.0,
+                'final_steer': 0.0,
+                'final_brake': 0.0,
+            }
             actions.append([0.0, 0.0, 0.0])
             return np.array(actions, dtype=np.float32)
         
@@ -374,7 +393,7 @@ class TCPAgent(BasePolicy):
         pred = self.net(rgb, state, target_point)
         
         # 使用process_action获取ctrl输出
-        steer_ctrl, throttle_ctrl, brake_ctrl, _ = self.net.process_action(
+        steer_ctrl, throttle_ctrl, brake_ctrl, ctrl_metadata = self.net.process_action(
             pred, cmd_value, speed_tensor, target_point
         )
         
@@ -407,7 +426,38 @@ class TCPAgent(BasePolicy):
         
         # 更新控制状态
         self._update_status(0, steer)
-        
+
+        # Persist one JSON-safe diagnostic snapshot.  The roundabout runtime
+        # copies it into telemetry.csv.gz, allowing a stopped vehicle to be
+        # attributed to the learned control branch, trajectory branch, or the
+        # final blend without changing the requested control.
+        predicted_waypoints = pred['pred_wp'][0].detach().cpu().numpy()
+        self.last_debug = {
+            'warmup': False,
+            'step': int(self.step_count[0]),
+            'command_index': int(cmd_value),
+            'target_point': [float(value) for value in target_point[0].detach().cpu()],
+            'predicted_waypoints': [
+                [float(value) for value in point]
+                for point in predicted_waypoints
+            ],
+            'desired_speed_mps': float(metadata.get('desired_speed', 0.0)),
+            'ctrl_throttle': float(throttle_ctrl),
+            'ctrl_steer': float(steer_ctrl),
+            'ctrl_brake': float(brake_ctrl),
+            'traj_throttle': float(throttle_traj),
+            'traj_steer': float(steer_traj),
+            'traj_brake': float(brake_traj),
+            'final_throttle': float(throttle),
+            'final_steer': float(steer),
+            'final_brake': float(brake),
+            'blend_status': int(self.status_list[0]),
+            'ctrl_acceleration_source': (
+                'brake' if float(ctrl_metadata.get('brake', 0.0)) > 0.0
+                else 'throttle'
+            ),
+        }
+
         # 保留制动输出；1.d 等停车场景不能丢弃 brake。
         actions.append([throttle, steer, brake])
             

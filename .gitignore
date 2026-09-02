@@ -12,3 +12,5 @@ __pycache__/
 # User-selected subsets for local smoke runs; the published definitions above
 # remain versioned.
 /save_scenarios/2b/runsets/
+# Local model checkpoints
+/tcp/*.ckpt

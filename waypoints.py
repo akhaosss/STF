@@ -133,7 +133,8 @@ class CarlaMapEditor0916:
                  scenario="1", save_dir="output", maneuver="straight", seed=41798,
                  roundabout_speed_limit_kmh=None, roundabout_variants=None,
                  roundabout_conflict_headway_s=VT1_CONFLICT_HEADWAY_TARGET_S,
-                 roundabout_conflict_tolerance_s=VT1_CONFLICT_HEADWAY_TOLERANCE_S):
+                 roundabout_conflict_tolerance_s=VT1_CONFLICT_HEADWAY_TOLERANCE_S,
+                 roundabout_vt1_post_exit_clearance_distance_m=25.0):
         self.client = carla.Client(host, port)
         self.client.set_timeout(10.0)
         self.world = self.client.get_world()
@@ -511,6 +512,8 @@ class CarlaMapEditor0916:
             roundabout_conflict_headway_s)
         self.roundabout_conflict_tolerance_s = float(
             roundabout_conflict_tolerance_s)
+        self.roundabout_vt1_post_exit_clearance_distance_m = float(
+            roundabout_vt1_post_exit_clearance_distance_m)
         if (not math.isfinite(self.roundabout_conflict_headway_s)
                 or self.roundabout_conflict_headway_s <= 0.0):
             raise ValueError("roundabout_conflict_headway_s must be positive")
@@ -520,6 +523,11 @@ class CarlaMapEditor0916:
                 > self.roundabout_conflict_headway_s):
             raise ValueError(
                 "roundabout_conflict_tolerance_s must be between 0 and headway")
+        if (not math.isfinite(
+                self.roundabout_vt1_post_exit_clearance_distance_m)
+                or self.roundabout_vt1_post_exit_clearance_distance_m <= 0.0):
+            raise ValueError(
+                "roundabout_vt1_post_exit_clearance_distance_m must be positive")
         self.roundabout_variants = roundabout_variants or {
             "weather": [{"id": "clear_day", "preset": "sunny", "level": 7}],
             "vehicles": [{
@@ -7161,6 +7169,10 @@ class CarlaMapEditor0916:
             "vt1_conflict_max_offset_m": 12.0,
             "vt1_speed_continuity_duration_s": 0.5,
             "vt1_exit_observation_timeout_s": 20.0,
+            "vt1_post_exit_clearance_distance_m": round(
+                getattr(
+                    self, "roundabout_vt1_post_exit_clearance_distance_m", 25.0),
+                4),
             "vt2_stationary_speed_threshold_mps": 0.1,
             "vt2_initial_upstream_distance_m": VT2_DEFAULT_UPSTREAM_DISTANCE_M,
             "vt2_minimum_gate_clearance_m": VT2_MINIMUM_GATE_CLEARANCE_M,
@@ -7902,6 +7914,10 @@ def main():
         '--roundabout_conflict_tolerance_s', type=float,
         default=VT1_CONFLICT_HEADWAY_TOLERANCE_S,
         help='Allowed engineering tolerance around the target merge time gap')
+    parser.add_argument(
+        '--roundabout_vt1_post_exit_clearance_distance_m', type=float,
+        default=25.0,
+        help='Distance VT1 follows the connected exit lane after crossing exit 1')
     args = parser.parse_args()
     roundabout_variants = None
     if args.roundabout_variants_json:
@@ -7913,7 +7929,9 @@ def main():
         roundabout_speed_limit_kmh=args.roundabout_speed_limit_kmh,
         roundabout_variants=roundabout_variants,
         roundabout_conflict_headway_s=args.roundabout_conflict_headway_s,
-        roundabout_conflict_tolerance_s=args.roundabout_conflict_tolerance_s)
+        roundabout_conflict_tolerance_s=args.roundabout_conflict_tolerance_s,
+        roundabout_vt1_post_exit_clearance_distance_m=
+        args.roundabout_vt1_post_exit_clearance_distance_m)
     editor.run()
 
 if __name__ == '__main__':
