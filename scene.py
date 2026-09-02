@@ -1531,7 +1531,7 @@ class CarGoandStopScene(BaseScene):
 
 
 class EgoRouteFollowScene(BaseScene):
-    def __init__(self, client, world, config_path, town, route_id, model, model_path=None, start_from_ego=False):
+    def __init__(self, client, world, config_path, town, route_id, model, model_path=None):
         super().__init__(client, world, config_path, town, route_id)
         self.world = world
         self.map = self.world.get_map()
@@ -1541,7 +1541,6 @@ class EgoRouteFollowScene(BaseScene):
         self.route_points = []
         self.current_target_idx = 0
         self.finished = False
-        self.start_from_ego = start_from_ego
 
         # 循迹控制
         self.speed_limit = 8.0
@@ -1584,34 +1583,6 @@ class EgoRouteFollowScene(BaseScene):
         except:
             self.route_points = []
 
-    def get_next_route_index(self, location):
-        if len(self.route_points) < 2:
-            return None
-
-        nearest_index = min(
-            range(len(self.route_points)),
-            key=lambda index: location.distance(self.route_points[index]))
-        return next(
-            (index for index in range(nearest_index + 1, len(self.route_points))
-             if location.distance(self.route_points[index]) > self.stop_distance),
-            None)
-
-    def align_route_with_ego_start(self):
-        """Continue along the ordered route from the Ego's nearest route point."""
-        ego_location = self.ego.get_location()
-        target_index = self.get_next_route_index(ego_location)
-
-        if target_index is None:
-            self.route_points = []
-            self.finished = True
-            print("⚠️ EGO 已在路线终点附近，没有剩余路线")
-            return
-
-        ego_start = carla.Location(ego_location.x, ego_location.y, ego_location.z)
-        self.route_points = [ego_start] + self.route_points[target_index:]
-        self.current_target_idx = 0
-        print(f"✅ 从 EGO 起点开始循迹，跳过 {target_index} 个旧路线点")
-
     def spawn_ego(self):
         """生成自车"""
         ego_cfg = self.config["ego_start"]
@@ -1622,27 +1593,12 @@ class EgoRouteFollowScene(BaseScene):
 
         bp_lib = self.world.get_blueprint_library()
         ego_bp = bp_lib.find("vehicle.tesla.model3")
-        waypoint = self.map.get_waypoint(carla.Location(x, y, z), project_to_road=True)
-        ground_z = waypoint.transform.location.z if waypoint else z
-        spawn_yaw = yaw
-
-        if self.start_from_ego:
-            target_index = self.get_next_route_index(carla.Location(x, y, z))
-            if target_index is not None:
-                target = self.route_points[target_index]
-                spawn_yaw = math.degrees(math.atan2(target.y - y, target.x - x))
-
-        for height_offset in (0.3, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25):
-            transform = carla.Transform(
-                carla.Location(x, y, ground_z + height_offset),
-                carla.Rotation(yaw=spawn_yaw)
-            )
-            self.ego = self.world.try_spawn_actor(ego_bp, transform)
-            if self.ego:
-                for _ in range(40):
-                    self.world.tick()
-                self.actors.append(self.ego)
-                return self.ego
+        transform = carla.Transform(
+            carla.Location(x, y, z),
+            carla.Rotation(yaw=yaw)
+        )
+        self.ego = self.world.spawn_actor(ego_bp, transform)
+        self.actors.append(self.ego)
         return self.ego
 
     def spawn_agents(self):
@@ -1691,13 +1647,11 @@ class EgoRouteFollowScene(BaseScene):
 
     def spawn(self):
         """生成入口"""
-        self.load_ego_route()
         self.ego = self.spawn_ego()
         if not self.ego:
             raise RuntimeError("EGO生成失败！")
 
-        if self.start_from_ego:
-            self.align_route_with_ego_start()
+        self.load_ego_route()
         self.ego.set_autopilot(False)
         self.spawn_agents()
 
