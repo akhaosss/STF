@@ -1,6 +1,6 @@
 # CARLA Map Editor \(0916\) 核心操作说明
 
-> 历史通用说明：部分按键、输出和命令已经被1.d/2.b专项流程替代。新用户请从 [根README](README.md) 进入；环岛使用 [2.b场景目录](docs/scenarios/2b_roundabout/README.md)。
+> 历史通用说明：部分按键、输出和命令已经被1.d/2.b专项流程替代。新用户请从[通用说明](README.md)进入；环岛使用[2.b场景目录](scenarios/2b_roundabout/README.md)。
 
 # 一、核心操作（绘制图像\+摆放元素）
 
